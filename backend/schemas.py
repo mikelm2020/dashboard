@@ -20,3 +20,10 @@ class SellersVector(BaseModel):
     month_concept: int
     year_concept: int
     total_sales: float
+
+
+class ProductsVector(BaseModel):
+    name: str
+    month_concept: int
+    year_concept: int
+    total_qty: float
