@@ -4,7 +4,13 @@ from typing import List
 from db import get_db_connection
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from schemas import ProductsVector, PurchasesVector, SalesVector, SellersVector
+from schemas import (
+    GrossProftMarginVector,
+    ProductsVector,
+    PurchasesVector,
+    SalesVector,
+    SellersVector,
+)
 
 app = FastAPI()
 
@@ -169,6 +175,41 @@ def get_sales_of_products():
                 "month_concept": row[1],
                 "year_concept": row[2],
                 "total_qty": row[3],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+@app.get("/gross-profit-margin/", response_model=List[GrossProftMarginVector])
+def get_gross_profit_margin():
+    final_query = ""
+    query = f"SELECT {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(b.CANT * b.PREC) - SUM(b.CANT*b.COST) AS total_gpm FROM FACTF01 AS a INNER JOIN PAR_FACTF01 AS b ON a.CVE_DOC = b.CVE_DOC WHERE (a.STATUS = 'E')"
+
+    final_query = f" GROUP BY {month_instruction[0]}, {year_instruction[0]}"
+
+    query += final_query
+
+    conn = get_db_connection()
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # Convertimos cada tupla a un diccionario
+        formatted_results = [
+            {
+                "month_concept": row[0],
+                "year_concept": row[1],
+                "total_gpm": row[2],
             }
             for row in results
         ]

@@ -27,3 +27,9 @@ class ProductsVector(BaseModel):
     month_concept: int
     year_concept: int
     total_qty: float
+
+
+class GrossProftMarginVector(BaseModel):
+    month_concept: int
+    year_concept: int
+    total_gpm: float
