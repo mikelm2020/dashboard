@@ -7,40 +7,60 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# Función de conexión a SQL Server
-def get_db_sqlserver():
+# SQL Server connection function
+def get_db_sqlserver(db_number: int):
+    """
+    Connects to a SQL Server database using the pymssql driver.
+
+    If the connection is successful, it returns a pymssql.Connection object.
+    If the connection fails, it prints an error message and returns None.
+
+    The connection parameters are expected to be in the environment variables
+    DB_SERVER, DB_USER, DB_PASSWORD and DB_NAME.
+    """
+
+    db_env_name = f"DB_NAME_{db_number}"
+
     try:
         return pymssql.connect(
             server=os.getenv("DB_SERVER"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME"),
+            database=os.getenv(db_env_name),
         )
     except pymssql.OperationalError as e:
         print(f"Error al conectar a la base de datos: {e}", flush=True)
         return None
 
 
-# Función de conexión a Firebird
-def connect_to_database():
+# Firebird connection feature
+def connect_to_database(db_number: int):
+    """
+    Connects to a Firebird database using the firebirdsql driver.
+
+    If the connection is successful, it returns a firebirdsql.Connection object.
+    If the connection fails, it prints an error message and returns None.
+
+    The connection parameters are expected to be in the environment variables
+    HOST, DB_USER and DB_PASSWORD. The database name is expected to be in the
+    environment variable FB_{db_number} and the path to the database file in
+    the environment variable PATHFB_{db_number}.
+    """
+
     host = os.getenv("HOST")
     username = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
+    database_name = f"FB_{db_number}"
+    path = f"PATHFB_{db_number}"
 
-    # Lee las variables de entono de las bases de datos
-    database1_name = os.getenv("FB_1")
-    # database2_name = os.getenv("DB_2")
-    # database3_name = os.getenv("DB_3")
-    path_1 = os.getenv("PATHFB_1")
-    # path_2 = os.getenv("PATH_2")
-    # path_3 = os.getenv("PATH_3")
+    # Read environment variables from databases
+    database_env_name = os.getenv(database_name)
+    path_env = os.getenv(path)
 
-    db_path = f"{path_1}{database1_name}"
+    db_path = f"{path_env}{database_env_name}"
 
-    # Realizar la conexión a la base de datos seleccionada
-    # connection_string = f"DRIVER=Firebird/InterBase(r) driver;SERVER={server_address};DATABASE={selected_db};UID={username};PWD={password}"
+    # Make the connection to the selected database
     try:
-        # conn = pyodbc.connect(connection_string)
         connection = firebirdsql.connect(
             host=host,
             database=db_path,
@@ -56,8 +76,17 @@ def connect_to_database():
         return None
 
 
-def get_db_connection():
+def get_db_connection(db_number: int):
+    """
+    Connects to a database based on the value of the DBMS environment variable.
+
+    If DBMS is SQLSERVER, it calls get_db_sqlserver().
+    If DBMS is FIREBIRD, it calls connect_to_database().
+
+    Returns a connection object if the connection is successful, or None if the connection fails.
+    """
+
     if os.getenv("DBMS") == "SQLSERVER":
-        return get_db_sqlserver()
+        return get_db_sqlserver(db_number)
     elif os.getenv("DBMS") == "FIREBIRD":
-        return connect_to_database()
+        return connect_to_database(db_number)

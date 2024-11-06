@@ -32,9 +32,31 @@ elif os.getenv("DBMS") == "FIREBIRD":
     top_instruction = "FIRST 5"
 
 
+def get_table_name(db_number: int, concept_prefix: str, subject_prefix: str) -> str:
+    """
+    Constructs table names based on the given database number and prefixes.
+
+    Args:
+        db_number (int): The database number to include in the table name.
+        concept_prefix (str): The prefix for the concept table name.
+        subject_prefix (str): The prefix for the subject table name.
+
+    Returns:
+        tuple: A tuple containing the concept table name and the subject table name.
+    """
+
+    if len(str(db_number)) >= 1 and len(str(db_number)) <= 9:
+        concept_table = f"{concept_prefix}0{db_number}"
+        subject_table = f"{subject_prefix}0{db_number}"
+    else:
+        concept_table = f"{concept_prefix}0{db_number}"
+        subject_table = f"{concept_prefix}0{db_number}"
+    return concept_table, subject_table
+
+
 # Endpoint for sales vector
 @app.get("/sales/", response_model=List[SalesVector])
-def get_sales():
+def get_sales(db_number: int = 1):
     """
     Endpoint to get sales data from the database.
 
@@ -48,13 +70,15 @@ def get_sales():
     """
 
     final_query = ""
-    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM FACTF01 AS a INNER JOIN CLIE01 AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS = 'E') AND b.NOMBRE IS NOT NULL"
+
+    invoices_table, clients_table = get_table_name(db_number, "FACTF", "CLIE")
+    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {clients_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS = 'E') AND b.NOMBRE IS NOT NULL"
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
     query += final_query
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_number)
     cursor = (
         conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
     )
@@ -83,7 +107,7 @@ def get_sales():
 
 # Endpoint for shopping vector
 @app.get("/purchases/", response_model=List[PurchasesVector])
-def get_purchases():
+def get_purchases(db_number: int = 1):
     """
     Endpoint to get purchase data from the database.
 
@@ -98,13 +122,14 @@ def get_purchases():
     """
 
     final_query = ""
-    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_purchases FROM COMPC01 AS a INNER JOIN PROV01 AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS <> 'C') AND b.NOMBRE IS NOT NULL"
+    purchases_table, providers_table = get_table_name(db_number, "COMPC", "PROV")
+    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_purchases FROM {purchases_table} AS a INNER JOIN {providers_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS <> 'C') AND b.NOMBRE IS NOT NULL"
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
     query += final_query
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_number)
     cursor = (
         conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
     )
@@ -133,7 +158,7 @@ def get_purchases():
 
 # Endpoint for sales vector by salesperson
 @app.get("/sellers/", response_model=List[SellersVector])
-def get_sales_of_seller():
+def get_sales_of_seller(db_number: int = 1):
     """
     Endpoint to get sales data by salesperson from the database.
 
@@ -147,13 +172,14 @@ def get_sales_of_seller():
     """
 
     final_query = ""
-    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM FACTF01 AS a INNER JOIN VEND01 AS b ON a.CVE_VEND = b.CVE_VEND WHERE (a.STATUS = 'E') AND b.NOMBRE IS NOT NULL"
+    invoices_table, sellers_table = get_table_name(db_number, "FACTF", "VEND")
+    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {sellers_table} AS b ON a.CVE_VEND = b.CVE_VEND WHERE (a.STATUS = 'E') AND b.NOMBRE IS NOT NULL"
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
     query += final_query
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_number)
     cursor = (
         conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
     )
@@ -182,7 +208,7 @@ def get_sales_of_seller():
 
 # Endpoint for sales vector by products
 @app.get("/products/", response_model=List[ProductsVector])
-def get_sales_of_products():
+def get_sales_of_products(db_number: int = 1):
     """
     Endpoint to get sales data by product from the database.
 
@@ -196,13 +222,14 @@ def get_sales_of_products():
     """
 
     final_query = ""
-    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM MINVE01 AS a INNER JOIN INVE01 AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'F') AND b.DESCR IS NOT NULL"
+    movs_table, inventory_table = get_table_name(db_number, "MINVE", "INVE")
+    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'F') AND b.DESCR IS NOT NULL"
 
     final_query = f" GROUP BY b.DESCR, {month_instruction[1]}, {year_instruction[1]}"
 
     query += final_query
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_number)
     cursor = (
         conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
     )
@@ -231,7 +258,7 @@ def get_sales_of_products():
 
 # Endpoint for gross profit margin
 @app.get("/gross-profit-margin/", response_model=List[GrossProftMarginVector])
-def get_gross_profit_margin():
+def get_gross_profit_margin(db_number: int = 1):
     """
     Endpoint to get gross profit margin data from the database.
 
@@ -245,13 +272,14 @@ def get_gross_profit_margin():
     """
 
     final_query = ""
-    query = f"SELECT {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(b.CANT * b.PREC) - SUM(b.CANT*b.COST) AS total_gpm FROM FACTF01 AS a INNER JOIN PAR_FACTF01 AS b ON a.CVE_DOC = b.CVE_DOC WHERE (a.STATUS = 'E')"
+    invoices_table, splits_table = get_table_name(db_number, "FACTF", "PAR_FACTF")
+    query = f"SELECT {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(b.CANT * b.PREC) - SUM(b.CANT*b.COST) AS total_gpm FROM {invoices_table} AS a INNER JOIN {splits_table} AS b ON a.CVE_DOC = b.CVE_DOC WHERE (a.STATUS = 'E')"
 
     final_query = f" GROUP BY {month_instruction[0]}, {year_instruction[0]}"
 
     query += final_query
 
-    conn = get_db_connection()
+    conn = get_db_connection(db_number)
     cursor = (
         conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
     )

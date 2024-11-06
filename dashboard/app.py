@@ -19,11 +19,12 @@ with open("../config.yaml", "r", encoding="utf-8") as file:
 
 initial_year = int(os.getenv("INITIAL_YEAR"))
 final_year = datetime.now().year
+number_of_databases = int(os.getenv("NUMBER_OF_DATABASES"))
 
 
 # Function to get data from the API
 @st.cache_data
-def fetch_dashboard_data(endpoint: str):
+def fetch_dashboard_data(endpoint: str, db_number: int):
     """Fetches data from the dashboard API and returns it as a pandas DataFrame.
 
     Args:
@@ -32,8 +33,8 @@ def fetch_dashboard_data(endpoint: str):
     Returns:
         pd.DataFrame: The fetched data, converted into a pandas DataFrame.
     """
-
-    response = requests.get(f"{base_url}/{endpoint}")
+    param = {"db_number": db_number}
+    response = requests.get(f"{base_url}/{endpoint}", params=param)
     data = response.json()
     return pd.DataFrame(data)  # Convert the data list into a DataFrame
 
@@ -285,7 +286,10 @@ if st.session_state["authentication_status"]:
     st.header(f"Bienvenido al dashboard  *{st.session_state['name']}*")
     st.write("___")
 
-    # Month and year filters
+    # database number, Month and year filters
+    database_number = st.sidebar.selectbox(
+        "Seleccione el número de empresa", list(range(1, number_of_databases + 1))
+    )
     year = st.sidebar.selectbox(
         "Seleccione el año", list(range(initial_year, final_year + 1))
     )
@@ -297,7 +301,7 @@ if st.session_state["authentication_status"]:
     base_url = os.getenv("BASE_URL")
 
     # Gets all sales in the system
-    sales_array = fetch_dashboard_data("sales")
+    sales_array = fetch_dashboard_data("sales", database_number)
 
     if sales_array is not None:
         if month is None:
@@ -328,7 +332,7 @@ if st.session_state["authentication_status"]:
         st.warning("No hay datos de ventas disponibles")
 
     # Gets all system purchases
-    purchases_array = fetch_dashboard_data("purchases")
+    purchases_array = fetch_dashboard_data("purchases", database_number)
     if purchases_array is not None:
         if month is None:
             title_header_purchases = f"Compras del año {year}"
@@ -361,7 +365,7 @@ if st.session_state["authentication_status"]:
         st.warning("No hay datos de compras disponibles")
 
     # Gets all sales per salesperson in the system
-    sales_by_seller_array = fetch_dashboard_data("sellers")
+    sales_by_seller_array = fetch_dashboard_data("sellers", database_number)
     if sales_by_seller_array is not None:
         if month is None:
             title_header_seller = f"Ventas del año {year}"
@@ -383,7 +387,7 @@ if st.session_state["authentication_status"]:
         st.warning("No hay datos de ventas por vendedor disponibles")
 
     # Gets all sales by product in the system
-    sales_by_product_array = fetch_dashboard_data("products")
+    sales_by_product_array = fetch_dashboard_data("products", database_number)
     if sales_by_product_array is not None:
         if month is None:
             title_header_products = f"Volumen de Ventas del año {year}"
@@ -405,7 +409,9 @@ if st.session_state["authentication_status"]:
         st.warning("No hay datos de ventas por producto disponibles")
 
     # Get the gross profit margin
-    gross_profit_margin_array = fetch_dashboard_data("gross-profit-margin")
+    gross_profit_margin_array = fetch_dashboard_data(
+        "gross-profit-margin", database_number
+    )
     if gross_profit_margin_array is not None:
         if month is None:
             title_header_gpm = f"Margen de Ganancia Bruta del año {year}"
