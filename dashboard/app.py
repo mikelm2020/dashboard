@@ -13,29 +13,8 @@ initial_year = int(os.getenv("INITIAL_YEAR"))
 final_year = datetime.now().year
 
 
-def fetch_scalar_data(endpoint, month, year):
-    params = {"month": month, "year": year}
-    response = requests.get(f"{base_url}/{endpoint}", params=params)
-
-    # Verifica el código de estado y el contenido antes de intentar decodificar como JSON
-    if (
-        response.status_code == 200 and response.text.strip()
-    ):  # Asegura que no esté vacío
-        try:
-            data = response.json()
-            # Si el resultado es un diccionario con un valor escalar, devuelve solo el valor
-            if isinstance(data, dict) and len(data) == 1:
-                return list(data.values())[0]  # Obtén el único valor en el diccionario
-            else:
-                st.error("Formato de respuesta inesperado.")
-        except ValueError:
-            st.error("Error de formato: no se puede decodificar JSON.")
-    else:
-        st.warning("No hay datos para el año consultado.")
-        return None  # Retorna None si no hay datos
-
-
 # Función para obtener datos del API
+@st.cache_data
 def fetch_dashboard_data(endpoint):
     response = requests.get(f"{base_url}/{endpoint}")
     data = response.json()
@@ -174,6 +153,7 @@ base_url = os.getenv("BASE_URL")
 
 # Obtiene todas las ventas del sistema
 sales_array = fetch_dashboard_data("sales")
+
 if sales_array is not None:
     # Obtiene las ventas del año seleccionado
     # Obtiene encabezados y calcula las metricas de ventas
@@ -247,14 +227,14 @@ if sales_by_seller_array is not None:
     # Obtiene las ventas del año seleccionado
     # Obtiene encabezados
     if month is None:
-        title_header = f"Ventas del año {year}"
+        title_header_seller = f"Ventas del año {year}"
         # Filtra las filas en las que el año coincide
         sales_by_seller_array_filtered = sales_by_seller_array[
             sales_by_seller_array["year_concept"] == year
         ]
         total_sales_by_seller = sales_by_seller_array_filtered["total_sales"].sum()
     else:
-        title_header = f"Ventas del mes del año {year}"
+        title_header_seller = f"Ventas del mes del año {year}"
         # Filtra filas en las que el mes y el año coinciden
         sales_by_seller_array_filtered = sales_by_seller_array[
             (sales_by_seller_array["month_concept"] == month)
@@ -268,14 +248,14 @@ if sales_by_product_array is not None:
     # Obtiene las ventas del año seleccionado
     # Obtiene encabezados
     if month is None:
-        title_header = f"Volumen de Ventas del año {year}"
+        title_header_products = f"Volumen de Ventas del año {year}"
         # Filtra las filas en las que el año coincide
         sales_by_product_array_filtered = sales_by_product_array[
             sales_by_product_array["year_concept"] == year
         ]
         total_qty_by_product = sales_by_product_array_filtered["total_qty"].sum()
     else:
-        title_header = f"Volumen de Ventas del mes del año {year}"
+        title_header_products = f"Volumen de Ventas del mes del año {year}"
         # Filtra filas en las que el mes y el año coinciden
         sales_by_product_array_filtered = sales_by_product_array[
             (sales_by_product_array["month_concept"] == month)
@@ -289,14 +269,14 @@ if gross_profit_margin_array is not None:
     # Obtiene las ventas del año seleccionado
     # Obtiene encabezados
     if month is None:
-        title_header = f"Margen de Ganancia Bruta del año {year}"
+        title_header_gpm = f"Margen de Ganancia Bruta del año {year}"
         # Filtra las filas en las que el año coincide
         gross_profit_margin_array_filtered = gross_profit_margin_array[
             gross_profit_margin_array["year_concept"] == year
         ]
         total_gpm = gross_profit_margin_array_filtered["total_gpm"].sum()
     else:
-        title_header = f"Volumen de Ventas del mes del año {year}"
+        title_header_gpm = f"Volumen de Ventas del mes del año {year}"
         # Filtra filas en las que el mes y el año coinciden
         gross_profit_margin_array_filtered = gross_profit_margin_array[
             (gross_profit_margin_array["month_concept"] == month)
@@ -458,7 +438,7 @@ with tab1:
 with tab2:
     # Obtener total de ventas
     if total_sales is not None:
-        st.header(f"{title_header} $ {total_sales:,.2f}")
+        st.header(f"{title_header}: $ {total_sales:,.2f}")
     else:
         st.warning("No hay datos de ventas disponibles")
 
@@ -481,7 +461,7 @@ with tab2:
 with tab3:
     # Obtener total de compras
     if total_purchases is not None:
-        st.header(f"{title_header_purchases} $ {total_purchases:,.2f}")
+        st.header(f"{title_header_purchases}: $ {total_purchases:,.2f}")
     else:
         st.warning("No hay datos de ventas disponibles")
 
@@ -504,7 +484,7 @@ with tab3:
 with tab4:
     # Obtener total de ventas por vendedor
     if total_sales_by_seller is not None:
-        st.header(f"{title_header} $ {total_sales_by_seller:,.2f}")
+        st.header(f"{title_header_seller}: $ {total_sales_by_seller:,.2f}")
     else:
         st.warning("No hay datos de ventas disponibles")
 
@@ -527,7 +507,7 @@ with tab4:
 with tab5:
     # Obtener total de ventas por producto
     if total_qty_by_product is not None:
-        st.header(f"{title_header}  {total_qty_by_product:,.0f}")
+        st.header(f"{title_header_products}:  {total_qty_by_product:,.0f}")
     else:
         st.warning("No hay datos de ventas disponibles")
 
