@@ -20,6 +20,7 @@ with open("../config.yaml", "r", encoding="utf-8") as file:
 initial_year = int(os.getenv("INITIAL_YEAR"))
 final_year = datetime.now().year
 number_of_databases = int(os.getenv("NUMBER_OF_DATABASES"))
+number_of_entries = int(os.getenv("TOP_N"))
 
 
 # Function to get data from the API
@@ -29,6 +30,7 @@ def fetch_dashboard_data(endpoint: str, db_number: int):
 
     Args:
         endpoint (str): The API endpoint to fetch data from.
+        db_number (int): The database number to fetch data from.
 
     Returns:
         pd.DataFrame: The fetched data, converted into a pandas DataFrame.
@@ -167,14 +169,17 @@ def get_metric(
     )
 
 
-def get_top(filtered_df: pd.DataFrame, group_column: str, mount_column: str):
+def get_top(
+    filtered_df: pd.DataFrame, group_column: str, mount_column: str, top_n: int
+):
     """
-    Filters the top 5 entries from a DataFrame based on a specified column.
+    Filters the top N entries from a DataFrame based on a specified column.
 
     Args:
         filtered_df (pd.DataFrame): The DataFrame to filter and sort.
         group_column (str): The column to group the DataFrame by.
         mount_column (str): The column whose values are to be summed and sorted.
+        top_n (int): The number of top entries to return.
 
     Returns:
         pd.DataFrame: A DataFrame containing the top 5 entries with the highest sums in the specified column.
@@ -184,7 +189,7 @@ def get_top(filtered_df: pd.DataFrame, group_column: str, mount_column: str):
         filtered_df.groupby(group_column, as_index=False)[mount_column]
         .sum()
         .sort_values(by=mount_column, ascending=False)
-        .head(5)
+        .head(top_n)
     )
     return df
 
@@ -281,11 +286,6 @@ except LoginError as e:
 
 
 if st.session_state["authentication_status"]:
-    st.write("___")
-    authenticator.logout()
-    st.header(f"Bienvenido al dashboard  *{st.session_state['name']}*")
-    st.write("___")
-
     # database number, Month and year filters
     database_number = st.sidebar.selectbox(
         "Seleccione el número de empresa", list(range(1, number_of_databases + 1))
@@ -297,13 +297,26 @@ if st.session_state["authentication_status"]:
     if month == "Todos":
         month = None
 
+    company_environment = f"COMPANY_NAME_{database_number}"
+    name_of_company = os.getenv(company_environment)
+
+    st.write("___")
+    authenticator.logout()
+    company_section, name_section = st.columns(2)
+    with company_section:
+        st.write(f"DASHBOARD: {name_of_company}")
+    with name_section:
+        st.write(f"Bienvenido: *{st.session_state['name']}*")
+    st.write("___")
+
     # FastAPI Base URL
     base_url = os.getenv("BASE_URL")
 
     # Gets all sales in the system
     sales_array = fetch_dashboard_data("sales", database_number)
 
-    if sales_array is not None:
+    if not sales_array.empty:
+        has_sales = True
         if month is None:
             title_header = f"Ventas del año {year}"
             # Filters rows where the year matches
@@ -330,10 +343,12 @@ if st.session_state["authentication_status"]:
 
     else:  # If there is no data, display a warning message
         st.warning("No hay datos de ventas disponibles")
+        has_sales = False
 
     # Gets all system purchases
     purchases_array = fetch_dashboard_data("purchases", database_number)
-    if purchases_array is not None:
+    if not purchases_array.empty:
+        has_purchases = True
         if month is None:
             title_header_purchases = f"Compras del año {year}"
             # Filters rows where the year matches
@@ -362,11 +377,13 @@ if st.session_state["authentication_status"]:
             number_of_purchases = purchases_array_filtered["total_purchases"].count()
 
     else:  # If there is no data, display a warning message
+        has_purchases = False
         st.warning("No hay datos de compras disponibles")
 
     # Gets all sales per salesperson in the system
     sales_by_seller_array = fetch_dashboard_data("sellers", database_number)
-    if sales_by_seller_array is not None:
+    if not sales_by_seller_array.empty:
+        has_sellers = True
         if month is None:
             title_header_seller = f"Ventas del año {year}"
             # Filters rows where the year matches
@@ -384,11 +401,13 @@ if st.session_state["authentication_status"]:
             total_sales_by_seller = sales_by_seller_array_filtered["total_sales"].sum()
 
     else:  # If there is no data, display a warning message
+        has_sellers = False
         st.warning("No hay datos de ventas por vendedor disponibles")
 
     # Gets all sales by product in the system
     sales_by_product_array = fetch_dashboard_data("products", database_number)
-    if sales_by_product_array is not None:
+    if not sales_by_product_array.empty:
+        has_products = True
         if month is None:
             title_header_products = f"Volumen de Ventas del año {year}"
             # Filters rows where the year matches
@@ -406,13 +425,15 @@ if st.session_state["authentication_status"]:
             total_qty_by_product = sales_by_product_array_filtered["total_qty"].sum()
 
     else:  # If there is no data, display a warning message
+        has_products = False
         st.warning("No hay datos de ventas por producto disponibles")
 
     # Get the gross profit margin
     gross_profit_margin_array = fetch_dashboard_data(
         "gross-profit-margin", database_number
     )
-    if gross_profit_margin_array is not None:
+    if not gross_profit_margin_array.empty:
+        has_profit_margin = True
         if month is None:
             title_header_gpm = f"Margen de Ganancia Bruta del año {year}"
             # Filters rows where the year matches
@@ -430,6 +451,7 @@ if st.session_state["authentication_status"]:
             total_gpm = gross_profit_margin_array_filtered["total_gpm"].sum()
 
     else:  # If there is no data, display a warning message
+        has_profit_margin = False
         st.warning("No hay datos para calcular el margen de ganancia bruta disponibles")
 
     # Saving config file
@@ -449,262 +471,316 @@ if st.session_state["authentication_status"]:
 
     with tab1:
         # Calculate sales metrics
-        delta_sales = None
-        delta_average_sales = None
-        delta_median_sales = None
-        delta_max_sales = None
-        delta_min_sales = None
-        delta_number_of_sales = None
-        sales_array_filtered_previous = None
+        if has_sales:
+            delta_sales = None
+            delta_average_sales = None
+            delta_median_sales = None
+            delta_max_sales = None
+            delta_min_sales = None
+            delta_number_of_sales = None
+            sales_array_filtered_previous = None
 
-        delta_sales = get_delta(
-            month, year, sales_array, "total_sales", total_sales, 1000, "sum"
-        )
-
-        delta_average_sales = get_delta(
-            month, year, sales_array, "total_sales", average_sales, 1000, "mean"
-        )
-
-        delta_median_sales = get_delta(
-            month, year, sales_array, "total_sales", median_sales, 1000, "median"
-        )
-
-        delta_max_sales = get_delta(
-            month, year, sales_array, "total_sales", max_sales, 1000, "max"
-        )
-
-        delta_min_sales = get_delta(
-            month, year, sales_array, "total_sales", min_sales, 1000, "min"
-        )
-
-        delta_number_of_sales = get_delta(
-            month, year, sales_array, "total_sales", number_of_sales, 1, "count"
-        )
-
-        col1, col2 = st.columns(2)
-        with col1:
-            get_metric("Ingresos Netos", total_sales, "mdp", delta_sales, 1000)
-        with col2:
-            get_metric(
-                "Ventas Promedio", average_sales, "mdp", delta_average_sales, 1000
+            delta_sales = get_delta(
+                month, year, sales_array, "total_sales", total_sales, 1000, "sum"
             )
 
-        col3, col4 = st.columns(2)
-        with col3:
-            get_metric("Mediana Ventas", median_sales, "mdp", delta_median_sales, 1000)
-        with col4:
-            get_metric("Maxima Venta", max_sales, "mdp", delta_max_sales, 1000)
-
-        col5, col6 = st.columns(2)
-        with col5:
-            get_metric("Minima Venta", min_sales, "mdp", delta_min_sales, 1000)
-        with col6:
-            get_metric(
-                "Volumen de ventas",
-                number_of_sales,
-                "facturas",
-                delta_number_of_sales,
-                1,
+            delta_average_sales = get_delta(
+                month, year, sales_array, "total_sales", average_sales, 1000, "mean"
             )
+
+            delta_median_sales = get_delta(
+                month, year, sales_array, "total_sales", median_sales, 1000, "median"
+            )
+
+            delta_max_sales = get_delta(
+                month, year, sales_array, "total_sales", max_sales, 1000, "max"
+            )
+
+            delta_min_sales = get_delta(
+                month, year, sales_array, "total_sales", min_sales, 1000, "min"
+            )
+
+            delta_number_of_sales = get_delta(
+                month, year, sales_array, "total_sales", number_of_sales, 1, "count"
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                get_metric("Ingresos Netos", total_sales, "mdp", delta_sales, 1000)
+            with col2:
+                get_metric(
+                    "Ventas Promedio", average_sales, "mdp", delta_average_sales, 1000
+                )
+
+            col3, col4 = st.columns(2)
+            with col3:
+                get_metric(
+                    "Mediana Ventas", median_sales, "mdp", delta_median_sales, 1000
+                )
+            with col4:
+                get_metric("Maxima Venta", max_sales, "mdp", delta_max_sales, 1000)
+
+            col5, col6 = st.columns(2)
+            with col5:
+                get_metric("Minima Venta", min_sales, "mdp", delta_min_sales, 1000)
+            with col6:
+                get_metric(
+                    "Volumen de ventas",
+                    number_of_sales,
+                    "facturas",
+                    delta_number_of_sales,
+                    1,
+                )
+        else:
+            st.warning("No hay datos de ventas disponibles")
 
         # Calculate purchasing metrics
-        delta_purchases = None
-        delta_average_purchases = None
-        delta_median_purchases = None
-        delta_max_purchases = None
-        delta_min_purchases = None
-        delta_number_of_purchases = None
-        purchases_array_filtered_previous = None
+        if has_purchases:
+            delta_purchases = None
+            delta_average_purchases = None
+            delta_median_purchases = None
+            delta_max_purchases = None
+            delta_min_purchases = None
+            delta_number_of_purchases = None
+            purchases_array_filtered_previous = None
 
-        delta_purchases = get_delta(
-            month,
-            year,
-            purchases_array,
-            "total_purchases",
-            total_purchases,
-            1000,
-            "sum",
-        )
+            delta_purchases = get_delta(
+                month,
+                year,
+                purchases_array,
+                "total_purchases",
+                total_purchases,
+                1000,
+                "sum",
+            )
 
-        delta_average_purchases = get_delta(
-            month,
-            year,
-            purchases_array,
-            "total_purchases",
-            average_purchases,
-            1000,
-            "mean",
-        )
-
-        delta_median_purchases = get_delta(
-            month,
-            year,
-            purchases_array,
-            "total_purchases",
-            median_purchases,
-            1000,
-            "median",
-        )
-
-        delta_max_purchases = get_delta(
-            month, year, purchases_array, "total_purchases", max_purchases, 1000, "max"
-        )
-
-        delta_min_purchases = get_delta(
-            month, year, purchases_array, "total_purchases", min_purchases, 1000, "min"
-        )
-
-        delta_number_of_purchases = get_delta(
-            month,
-            year,
-            purchases_array,
-            "total_purchases",
-            number_of_purchases,
-            1,
-            "count",
-        )
-
-        col7, col8 = st.columns(2)
-        with col7:
-            get_metric("Compras", total_purchases, "mdp", delta_purchases, 1000)
-        with col8:
-            get_metric(
-                "Compras Promedio",
+            delta_average_purchases = get_delta(
+                month,
+                year,
+                purchases_array,
+                "total_purchases",
                 average_purchases,
-                "mdp",
-                delta_average_purchases,
                 1000,
+                "mean",
             )
 
-        col9, col10 = st.columns(2)
-        with col9:
-            get_metric(
-                "Mediana Compras", median_purchases, "mdp", delta_median_purchases, 1000
+            delta_median_purchases = get_delta(
+                month,
+                year,
+                purchases_array,
+                "total_purchases",
+                median_purchases,
+                1000,
+                "median",
             )
-        with col10:
-            get_metric("Maxima Compra", max_purchases, "mdp", delta_max_purchases, 1000)
 
-        col11, col12 = st.columns(2)
-        with col11:
-            get_metric("Minima Compra", min_purchases, "mdp", delta_min_purchases, 1000)
-        with col12:
-            get_metric(
-                "Volumen de Compras",
+            delta_max_purchases = get_delta(
+                month,
+                year,
+                purchases_array,
+                "total_purchases",
+                max_purchases,
+                1000,
+                "max",
+            )
+
+            delta_min_purchases = get_delta(
+                month,
+                year,
+                purchases_array,
+                "total_purchases",
+                min_purchases,
+                1000,
+                "min",
+            )
+
+            delta_number_of_purchases = get_delta(
+                month,
+                year,
+                purchases_array,
+                "total_purchases",
                 number_of_purchases,
-                "compras",
-                delta_number_of_purchases,
                 1,
+                "count",
             )
 
-        # Calculate metrics
-        delta_gross_profit_margin = None
-        sales_array_filtered_previous = None
+            col7, col8 = st.columns(2)
+            with col7:
+                get_metric("Compras", total_purchases, "mdp", delta_purchases, 1000)
+            with col8:
+                get_metric(
+                    "Compras Promedio",
+                    average_purchases,
+                    "mdp",
+                    delta_average_purchases,
+                    1000,
+                )
 
-        delta_gross_profit_margin = get_delta(
-            month, year, gross_profit_margin_array, "total_gpm", total_gpm, 1000, "sum"
-        )
+            col9, col10 = st.columns(2)
+            with col9:
+                get_metric(
+                    "Mediana Compras",
+                    median_purchases,
+                    "mdp",
+                    delta_median_purchases,
+                    1000,
+                )
+            with col10:
+                get_metric(
+                    "Maxima Compra", max_purchases, "mdp", delta_max_purchases, 1000
+                )
 
-        col13, col14 = st.columns(2)
-        with col13:
-            get_metric(
-                "Margen de Ganancia Bruta",
+            col11, col12 = st.columns(2)
+            with col11:
+                get_metric(
+                    "Minima Compra", min_purchases, "mdp", delta_min_purchases, 1000
+                )
+            with col12:
+                get_metric(
+                    "Volumen de Compras",
+                    number_of_purchases,
+                    "compras",
+                    delta_number_of_purchases,
+                    1,
+                )
+
+            # Calculate metrics
+            delta_gross_profit_margin = None
+            sales_array_filtered_previous = None
+
+            delta_gross_profit_margin = get_delta(
+                month,
+                year,
+                gross_profit_margin_array,
+                "total_gpm",
                 total_gpm,
-                "mdp",
-                delta_gross_profit_margin,
                 1000,
+                "sum",
             )
+
+            col13, col14 = st.columns(2)
+            with col13:
+                get_metric(
+                    "Margen de Ganancia Bruta",
+                    total_gpm,
+                    "mdp",
+                    delta_gross_profit_margin,
+                    1000,
+                )
+        else:
+            st.warning("No hay datos de compras disponibles")
 
     with tab2:
-        # Get total sales
-        if total_sales is not None:
-            st.header(f"{title_header}: $ {total_sales:,.2f}")
+        if has_sales:
+            # Get total sales
+            if total_sales is not None:
+                st.header(f"{title_header}: $ {total_sales:,.2f}")
+            else:
+                st.warning("No hay datos de ventas disponibles")
+
+            st.header(f"Los {number_of_entries} primeros mejores clientes")
+            # Show Top N Clients
+            top_clients = get_top(
+                sales_array_filtered, "name", "total_sales", number_of_entries
+            )
+
+            left_section, right_section = st.columns([0.7, 0.3])
+            if top_clients.empty:
+                st.warning("No hay datos para mostrar")
+            else:
+                with left_section:
+                    df_formated = format_top_dataframe(
+                        top_clients, "name", "total_sales", "Cliente", "Ventas"
+                    )
+            with right_section:
+                with st.popover("Mostrar gráfica"):
+                    get_circular_graph(top_clients, "total_sales", "name")
         else:
             st.warning("No hay datos de ventas disponibles")
-
-        st.header("Los 5 primeros mejores clientes")
-        # Show Top 5 Clients
-        top_clients = get_top(sales_array_filtered, "name", "total_sales")
-
-        left_section, right_section = st.columns(2)
-        if top_clients.empty:
-            st.warning("No hay datos para mostrar")
-        else:
-            with left_section:
-                df_formated = format_top_dataframe(
-                    top_clients, "name", "total_sales", "Cliente", "Ventas"
-                )
-        with right_section:
-            with st.popover("Mostrar gráfica"):
-                get_circular_graph(top_clients, "total_sales", "name")
 
     with tab3:
-        # Get total purchases
-        if total_purchases is not None:
-            st.header(f"{title_header_purchases}: $ {total_purchases:,.2f}")
-        else:
-            st.warning("No hay datos de ventas disponibles")
+        if has_purchases:
+            # Get total purchases
+            if total_purchases is not None:
+                st.header(f"{title_header_purchases}: $ {total_purchases:,.2f}")
+            else:
+                st.warning("No hay datos de ventas disponibles")
 
-        st.header("Los 5 primeros mejores proveedores")
-        # Show Top 5 Suppliers
-        top_providers = get_top(purchases_array_filtered, "name", "total_purchases")
+            st.header(f"Los {number_of_entries} primeros mejores proveedores")
+            # Show Top N Suppliers
+            top_providers = get_top(
+                purchases_array_filtered, "name", "total_purchases", number_of_entries
+            )
 
-        left_section, right_section = st.columns([0.7, 0.3])
-        if top_providers.empty:
-            st.warning("No hay datos para mostrar")
+            left_section, right_section = st.columns([0.7, 0.3])
+            if top_providers.empty:
+                st.warning("No hay datos para mostrar")
+            else:
+                with left_section:
+                    df_formated = format_top_dataframe(
+                        top_providers, "name", "total_purchases", "Proveedor", "Compras"
+                    )
+            with right_section:
+                with st.popover("Mostrar gráfica"):
+                    get_circular_graph(top_providers, "total_purchases", "name")
         else:
-            with left_section:
-                df_formated = format_top_dataframe(
-                    top_providers, "name", "total_purchases", "Proveedor", "Compras"
-                )
-        with right_section:
-            with st.popover("Mostrar gráfica"):
-                get_circular_graph(top_providers, "total_purchases", "name")
+            st.warning("No hay datos de compras disponibles")
 
     with tab4:
-        # Get total sales by seller
-        if total_sales_by_seller is not None:
-            st.header(f"{title_header_seller}: $ {total_sales_by_seller:,.2f}")
-        else:
-            st.warning("No hay datos de ventas disponibles")
+        if has_sellers:
+            # Get total sales by seller
+            if total_sales_by_seller is not None:
+                st.header(f"{title_header_seller}: $ {total_sales_by_seller:,.2f}")
+            else:
+                st.warning("No hay datos de ventas disponibles")
 
-        st.header("Los 5 primeros mejores vendedores")
-        # Show Top 5 Sellers
-        top_sellers = get_top(sales_by_seller_array_filtered, "name", "total_sales")
+            st.header(f"Los {number_of_entries} primeros mejores vendedores")
+            # Show Top N Sellers
+            top_sellers = get_top(
+                sales_by_seller_array_filtered, "name", "total_sales", number_of_entries
+            )
 
-        left_section, right_section = st.columns(2)
-        if top_sellers.empty:
-            st.warning("No hay datos para mostrar")
+            left_section, right_section = st.columns([0.7, 0.3])
+            if top_sellers.empty:
+                st.warning("No hay datos para mostrar")
+            else:
+                with left_section:
+                    df_formated = format_top_dataframe(
+                        top_sellers, "name", "total_sales", "Vendedor", "Ventas"
+                    )
+            with right_section:
+                with st.popover("Mostrar gráfica"):
+                    get_circular_graph(top_sellers, "total_sales", "name")
         else:
-            with left_section:
-                df_formated = format_top_dataframe(
-                    top_sellers, "name", "total_sales", "Vendedor", "Ventas"
-                )
-        with right_section:
-            with st.popover("Mostrar gráfica"):
-                get_circular_graph(top_sellers, "total_sales", "name")
+            st.warning("No hay datos de ventas por vendedor disponibles")
 
     with tab5:
-        # Get total sales by product
-        if total_qty_by_product is not None:
-            st.header(f"{title_header_products}:  {total_qty_by_product:,.0f}")
-        else:
-            st.warning("No hay datos de ventas disponibles")
+        if has_products:
+            # Get total sales by product
+            if total_qty_by_product is not None:
+                st.header(f"{title_header_products}:  {total_qty_by_product:,.0f}")
+            else:
+                st.warning("No hay datos de ventas disponibles")
 
-        st.header("Los 5 primeros mejores productos")
-        # Show Top 5 Products
-        top_products = get_top(sales_by_product_array_filtered, "name", "total_qty")
+            st.header(f"Los {number_of_entries} primeros mejores productos")
+            # Show Top N Products
+            top_products = get_top(
+                sales_by_product_array_filtered, "name", "total_qty", number_of_entries
+            )
 
-        left_section, right_section = st.columns([0.7, 0.3])
-        if top_products.empty:
-            st.warning("No hay datos para mostrar")
+            left_section, right_section = st.columns([0.7, 0.3])
+            if top_products.empty:
+                st.warning("No hay datos para mostrar")
+            else:
+                with left_section:
+                    df_formated = format_top_dataframe(
+                        top_products, "name", "total_qty", "Producto", "Cantidad", False
+                    )
+            with right_section:
+                with st.popover("Mostrar gráfica"):
+                    get_circular_graph(top_products, "total_qty", "name")
         else:
-            with left_section:
-                df_formated = format_top_dataframe(
-                    top_products, "name", "total_qty", "Producto", "Cantidad", False
-                )
-        with right_section:
-            with st.popover("Mostrar gráfica"):
-                get_circular_graph(top_products, "total_qty", "name")
+            st.warning("No hay datos de ventas por producto disponibles")
 
 elif st.session_state["authentication_status"] is False:
     st.error("Username/password son incorrectos")

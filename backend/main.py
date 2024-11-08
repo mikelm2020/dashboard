@@ -49,8 +49,8 @@ def get_table_name(db_number: int, concept_prefix: str, subject_prefix: str) -> 
         concept_table = f"{concept_prefix}0{db_number}"
         subject_table = f"{subject_prefix}0{db_number}"
     else:
-        concept_table = f"{concept_prefix}0{db_number}"
-        subject_table = f"{concept_prefix}0{db_number}"
+        concept_table = f"{concept_prefix}{db_number}"
+        subject_table = f"{concept_prefix}{db_number}"
     return concept_table, subject_table
 
 
