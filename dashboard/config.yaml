@@ -1,0 +1,42 @@
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    admin:
+      email: admin@gmail.com
+      failed_login_attempts: 1
+      first_name: Miguel Angel
+      last_name: Lopez Monroy
+      logged_in: true
+      password: $2b$12$FH2pvtH8T.g5WWa2gzNu.O.DFQ3AA0bY.LTVn/2qKLsF2kmYhsuOy
+      roles:
+      - admin
+    aliciaav2345:
+      email: alicia_a@gmail.com
+      first_name: Alicia
+      last_name: Avellaneda
+      logged_in: false
+      password: $2b$12$iahgt68iP16jVRJLtnHRqOBs5uhhxHWMwipeYj1vckk8y5j7kWLXG
+      password_hint: estado
+      roles:
+      - viewer
+    demouser:
+      email: demouser@gmail.com
+      failed_login_attempts: 0
+      first_name: Demo
+      last_name: User
+      logged_in: false
+      password: $2b$12$GXAjNrvKN9EtGtySUxR5uesvgPbh5oN4Vs0q4elPNH96PpLofeCy2
+      roles:
+      - viewer
+    juanp:
+      email: juan.perez@hotmail.com
+      first_name: Juan Eduardo
+      last_name: Perez
+      logged_in: false
+      password: $2b$12$AFTDrBkdkjup2LTYNWXeEezjNMFlYUuDyEQFsdBZgRxkaCJ2QuXj6
+      password_hint: u
+      roles:
+      - viewer
