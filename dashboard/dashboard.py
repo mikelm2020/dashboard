@@ -14,39 +14,26 @@ final_year = datetime.now().year
 number_of_databases = int(os.getenv("NUMBER_OF_DATABASES"))
 number_of_entries = int(os.getenv("TOP_N"))
 
-
 # database number, Month and year filters
-database_number = st.sidebar.selectbox(
-    "Seleccione el número de empresa", list(range(1, number_of_databases + 1))
-)
-year = st.sidebar.selectbox(
-    "Seleccione el año", list(range(initial_year, final_year + 1))
-)
-month = st.sidebar.selectbox("Seleccione el mes", ["Todos"] + list(range(1, 13)))
+database_number = st.session_state["database_number_select"]
+year = st.session_state["year_select"]
+month = st.session_state["month_select"]
 if month == "Todos":
     month = None
 
 company_environment = f"COMPANY_NAME_{database_number}"
 name_of_company = os.getenv(company_environment)
 
-st.write("___")
-# authenticator.logout()
-company_section, name_section = st.columns(2)
-with company_section:
-    st.write(f"DASHBOARD: {name_of_company}")
-with name_section:
-    st.write(f"Bienvenido: *{st.session_state['name']}*")
+logo = os.getenv("LOGO")
+logo_path = f"./{logo}"
+logo_base64 = utilities.image_to_base64(logo_path)
 
-st.write("___")
+# Get haeder
+utilities.render_header(name_of_company, st.session_state["name"], logo_base64)
 
-# # FastAPI Base URL
-# base_url = os.getenv("BASE_URL")
-
+# Get data from database
 data = utilities.get_data(database_number, year, month)
 
-# Saving config file
-# with open("../config.yaml", "w", encoding="utf-8") as file:
-#     yaml.dump(config, file, default_flow_style=False)
 
 # Create tabs
 tab1, tab2, tab3, tab4, tab5 = st.tabs(
@@ -239,7 +226,11 @@ with tab1:
         col7, col8 = st.columns(2)
         with col7:
             utilities.get_metric(
-                "Compras", data["total_purchases"], "K", delta_purchases, 1000
+                "Compras",
+                data["total_purchases"],
+                "K",
+                delta_purchases,
+                1000,
             )
         with col8:
             utilities.get_metric(

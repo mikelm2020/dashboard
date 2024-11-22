@@ -6,7 +6,7 @@ credentials:
   usernames:
     admin:
       email: admin@gmail.com
-      failed_login_attempts: 1
+      failed_login_attempts: 0
       first_name: Miguel Angel
       last_name: Lopez Monroy
       logged_in: true

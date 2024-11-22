@@ -1,3 +1,4 @@
+import base64
 import os
 from datetime import datetime
 
@@ -16,6 +17,60 @@ initial_year = int(os.getenv("INITIAL_YEAR"))
 final_year = datetime.now().year
 number_of_databases = int(os.getenv("NUMBER_OF_DATABASES"))
 number_of_entries = int(os.getenv("TOP_N"))
+
+
+# Convertir la imagen local a base64
+def image_to_base64(image_path):
+    """
+    Reads an image file and converts it to a base64 encoded string.
+
+    Args:
+        image_path (str): The path to the image file.
+
+    Returns:
+        str: The base64 encoded string of the image.
+    """
+
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode("utf-8")
+
+
+def render_header(company_name, user_name, logo_base64):
+    """
+    Renders a header at the top of the page with the company name and the user name.
+
+    Args:
+        company_name (str): The name of the company.
+        user_name (str): The name of the user.
+        logo_base64 (str): The URL of the logo image.
+    """
+    # Contenedor del header
+    with st.container():
+        # Aplicar estilos al contenedor completo
+        st.markdown(
+            f"""
+            <div style="
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                background-color: #262730; 
+                padding: 10px 20px; 
+                border-radius: 5px;">
+                <div style="margin-right: 15px;">
+                <img src="data:image/png;base64,{logo_base64}" alt="Logo" style="width: 75px;">
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0; font-size: 14px; font-weight: bold; color: #FFFFFF;">
+                        {user_name}
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #c3edfa;">
+                        {company_name}
+                    </p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 # Function to get data from the API
@@ -122,6 +177,8 @@ def get_delta(
             previous_value = concept_array_filtered_previous[mount_column].min()
         elif delta_type == "count":
             previous_value = concept_array_filtered_previous[mount_column].count()
+        elif delta_type == "nunique":
+            previous_value = concept_array_filtered_previous[mount_column].nunique()
 
         delta = calculate_delta(previous_value, last_value, divisor)
 
@@ -274,6 +331,7 @@ def get_data(database_number: int, year: int, month: int = None):
             max_sales = sales_array_filtered["total_sales"].max()
             min_sales = sales_array_filtered["total_sales"].min()
             number_of_sales = sales_array_filtered["total_sales"].count()
+            number_of_clients = sales_array_filtered["name"].nunique()
         else:
             title_header_sales = f"Ventas del mes del año {year}"
             # Filters rows where the month and year match
@@ -287,6 +345,7 @@ def get_data(database_number: int, year: int, month: int = None):
             max_sales = sales_array_filtered["total_sales"].max()
             min_sales = sales_array_filtered["total_sales"].min()
             number_of_sales = sales_array_filtered["total_sales"].count()
+            number_of_clients = sales_array_filtered["name"].nunique()
 
     else:  # If there is no data, display a warning message
         st.warning("No hay datos de ventas disponibles")
@@ -438,4 +497,5 @@ def get_data(database_number: int, year: int, month: int = None):
         "sales_by_seller_array_filtered": sales_by_seller_array_filtered,
         "sales_by_product_array_filtered": sales_by_product_array_filtered,
         "gross_profit_margin_array_filtered": gross_profit_margin_array_filtered,
+        "number_of_clients": number_of_clients,
     }

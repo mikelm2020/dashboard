@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -11,6 +12,13 @@ load_dotenv()
 
 config_file = os.getenv("CONFIG_FILE")
 
+initial_year = int(os.getenv("INITIAL_YEAR"))
+final_year = datetime.now().year
+current_month = datetime.now().month
+number_of_databases = int(os.getenv("NUMBER_OF_DATABASES"))
+number_of_entries = int(os.getenv("TOP_N"))
+
+
 # Loading config file
 with open(config_file, "r", encoding="utf-8") as file:
     config = yaml.load(file, Loader=SafeLoader)
@@ -19,7 +27,7 @@ with open(config_file, "r", encoding="utf-8") as file:
 st.set_page_config(
     page_title="Dashboard",
     page_icon=":bar_chart:",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="auto",
 )
 
@@ -47,6 +55,25 @@ if st.session_state["authentication_status"]:
     with st.sidebar:
         authenticator.logout()
 
+        database_number = st.selectbox(
+            "Seleccione el número de empresa",
+            list(range(1, number_of_databases + 1)),
+            key="database_number_select",
+        )
+        year = st.selectbox(
+            "Seleccione el año",
+            list(range(final_year, initial_year - 1, -1)),
+            key="year_select",
+        )
+        month = st.selectbox(
+            "Seleccione el mes",
+            ["Todos"] + list(range(1, 13)),
+            key="month_select",
+            index=current_month,
+        )
+        if month == "Todos":
+            month = None
+
     if user_role == "viewer":
         pages = {
             "Dashboard": [st.Page("dashboard.py", title="Dashboard")],
@@ -54,9 +81,15 @@ if st.session_state["authentication_status"]:
     elif user_role == "admin":  # For future use
         pages = {
             "Dashboard": [st.Page("dashboard.py", title="Dashboard")],
+            "Home": [st.Page("home.py", title="Home")],
         }
-    pg = st.navigation(pages)
-    pg.run()
+
+        # Contenedor exclusivo para el menú de navegación
+        menu_container = st.container()
+        with menu_container:
+            # Crear el menú de navegación
+            pg = st.navigation(pages)
+            pg.run()
 
 elif st.session_state["authentication_status"] is False:
     st.error("Username/password son incorrectos")
