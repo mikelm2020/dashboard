@@ -5,6 +5,7 @@ from db import get_db_connection
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from schemas import (
+    GoodsVector,
     GrossProftMarginVector,
     ProductsVector,
     PurchasesVector,
@@ -223,7 +224,7 @@ def get_sales_of_products(db_number: int = 1):
 
     final_query = ""
     movs_table, inventory_table = get_table_name(db_number, "MINVE", "INVE")
-    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'F') AND b.DESCR IS NOT NULL"
+    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'F' AND a.CVE_CPTO=51) AND b.DESCR IS NOT NULL"
 
     final_query = f" GROUP BY b.DESCR, {month_instruction[1]}, {year_instruction[1]}"
 
@@ -299,6 +300,56 @@ def get_gross_profit_margin(db_number: int = 1):
                 "month_concept": row[0],
                 "year_concept": row[1],
                 "total_gpm": row[2],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for sales vector by products
+@app.get("/goods/", response_model=List[GoodsVector])
+def get_purchases_of_goods(db_number: int = 1):
+    """
+    Endpoint to get purchases data by product from the database.
+
+    Returns a list of GoodsVector objects containing the name of the product, the month and year of the purchase, and the total quantity shopped.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+    movs_table, inventory_table = get_table_name(db_number, "MINVE", "INVE")
+    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'c' AND a.CVE_CPTO=1) AND b.DESCR IS NOT NULL"
+
+    final_query = f" GROUP BY b.DESCR, {month_instruction[1]}, {year_instruction[1]}"
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "name": row[0],
+                "month_concept": row[1],
+                "year_concept": row[2],
+                "total_qty": row[3],
             }
             for row in results
         ]

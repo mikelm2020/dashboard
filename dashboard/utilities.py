@@ -2,6 +2,7 @@ import base64
 import os
 from datetime import datetime
 
+import altair as alt
 import matplotlib.pyplot as plt
 import pandas as pd
 import requests
@@ -367,6 +368,7 @@ def get_data(database_number: int, year: int, month: int = None):
             max_purchases = purchases_array_filtered["total_purchases"].max()
             min_purchases = purchases_array_filtered["total_purchases"].min()
             number_of_purchases = purchases_array_filtered["total_purchases"].count()
+            number_of_providers = purchases_array_filtered["name"].nunique()
 
         else:
             title_header_purchases = f"Compras del mes del año {year}"
@@ -381,6 +383,7 @@ def get_data(database_number: int, year: int, month: int = None):
             max_purchases = purchases_array_filtered["total_purchases"].max()
             min_purchases = purchases_array_filtered["total_purchases"].min()
             number_of_purchases = purchases_array_filtered["total_purchases"].count()
+            number_of_providers = purchases_array_filtered["name"].nunique()
 
     else:  # If there is no data, display a warning message
         has_purchases = False
@@ -397,6 +400,8 @@ def get_data(database_number: int, year: int, month: int = None):
                 sales_by_seller_array["year_concept"] == year
             ]
             total_sales_by_seller = sales_by_seller_array_filtered["total_sales"].sum()
+            number_of_sellers = sales_by_seller_array_filtered["name"].nunique()
+
         else:
             title_header_seller = f"Ventas del mes del año {year}"
             # Filters rows where the month and year match
@@ -405,6 +410,7 @@ def get_data(database_number: int, year: int, month: int = None):
                 & (sales_by_seller_array["year_concept"] == year)
             ]
             total_sales_by_seller = sales_by_seller_array_filtered["total_sales"].sum()
+            number_of_sellers = sales_by_seller_array_filtered["name"].nunique()
 
     else:  # If there is no data, display a warning message
         has_sellers = False
@@ -460,6 +466,34 @@ def get_data(database_number: int, year: int, month: int = None):
         has_profit_margin = False
         st.warning("No hay datos para calcular el margen de ganancia bruta disponibles")
 
+    # Gets all purchases by product in the system
+    purchases_by_product_array = fetch_dashboard_data("goods", database_number)
+    if not purchases_by_product_array.empty:
+        has_goods = True
+        if month is None:
+            title_header_goods = f"Volumen de Compras del año {year}"
+            # Filters rows where the year matches
+            purchases_by_product_array_filtered = purchases_by_product_array[
+                purchases_by_product_array["year_concept"] == year
+            ]
+            total_purchases_qty_by_product = purchases_by_product_array_filtered[
+                "total_qty"
+            ].sum()
+        else:
+            title_header_goods = f"Volumen de Compras del mes del año {year}"
+            # Filters rows where the month and year match
+            purchases_by_product_array_filtered = purchases_by_product_array[
+                (purchases_by_product_array["month_concept"] == month)
+                & (purchases_by_product_array["year_concept"] == year)
+            ]
+            total_purchases_qty_by_product = purchases_by_product_array_filtered[
+                "total_qty"
+            ].sum()
+
+    else:  # If there is no data, display a warning message
+        has_goods = False
+        st.warning("No hay datos de compras por producto disponibles")
+
     # Return the data as a dictionary
     return {
         "has_sales": has_sales,
@@ -498,4 +532,87 @@ def get_data(database_number: int, year: int, month: int = None):
         "sales_by_product_array_filtered": sales_by_product_array_filtered,
         "gross_profit_margin_array_filtered": gross_profit_margin_array_filtered,
         "number_of_clients": number_of_clients,
+        "number_of_providers": number_of_providers,
+        "number_of_sellers": number_of_sellers,
+        "has_goods": has_goods,
+        "title_header_goods": title_header_goods,
+        "total_purchases_qty_by_product": total_purchases_qty_by_product,
+        "purchases_by_product_array": purchases_by_product_array,
     }
+
+
+def plot_sales_vs_profits(data):
+    """
+    Genera una gráfica de líneas con marcas para ventas y ganancias mensuales,
+    con formato 'K' y símbolo de moneda en el tooltip.
+
+    Args:
+        data (pd.DataFrame): DataFrame con columnas:
+            - month_concept
+            - year_concept
+            - total_sales
+            - total_gpm
+    """
+    # Ordenar por mes para garantizar la secuencia
+    data = data.sort_values("month_concept")
+
+    # Agregar nombres de los meses
+    data["month_name"] = data["month_concept"].apply(
+        lambda x: [
+            "Enero",
+            "Febrero",
+            "Marzo",
+            "Abril",
+            "Mayo",
+            "Junio",
+            "Julio",
+            "Agosto",
+            "Septiembre",
+            "Octubre",
+            "Noviembre",
+            "Diciembre",
+        ][x - 1]
+    )
+
+    # Cambiar formato para graficar ambas métricas en una sola columna
+    melted_data = data.melt(
+        id_vars=["month_name"],
+        value_vars=["total_sales", "total_gpm"],
+        var_name="Métrica",
+        value_name="Valor",
+    )
+
+    # Mapear nombres descriptivos para las métricas
+    metric_labels = {"total_sales": "Ventas", "total_gpm": "Ganancias"}
+    melted_data["Métrica"] = melted_data["Métrica"].map(metric_labels)
+
+    # Formato de miles (K) y símbolo de moneda
+    melted_data["Valor_formateado"] = melted_data["Valor"].apply(
+        lambda x: f"${x/1000:,.1f}K"
+    )
+
+    # Crear la gráfica con Altair
+    chart = (
+        alt.Chart(melted_data)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("month_name", title="Mes"),
+            y=alt.Y("Valor", title="Valor (en pesos)"),
+            color=alt.Color(
+                "Métrica",
+                title="Métrica",
+                scale=alt.Scale(
+                    domain=["Ventas", "Ganancias"], range=["blue", "green"]
+                ),
+            ),
+            tooltip=[
+                alt.Tooltip("month_name", title="Mes"),
+                alt.Tooltip("Métrica", title="Métrica"),
+                alt.Tooltip("Valor_formateado", title="Monto"),
+            ],
+        )
+        .properties(width=700, height=400, title="Ventas vs Ganancias Mensuales")
+    )
+
+    # Mostrar la gráfica con Streamlit
+    st.altair_chart(chart, use_container_width=True)
