@@ -735,3 +735,64 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
         )
     )
     return chart
+
+
+def generate_donut_chart(dataframe):
+    """
+    Genera una gráfica de dona con Altair para el top de clientes.
+    Incluye formato manual para el símbolo de pesos y porcentaje.
+
+    Args:
+        dataframe (pd.DataFrame): DataFrame con las columnas 'name' y 'total_sales'.
+    """
+    if dataframe.empty:
+        st.warning("No hay datos para mostrar en el top de clientes.")
+        return
+
+    if not {"name", "total_sales"}.issubset(dataframe.columns):
+        st.error(
+            "El DataFrame no contiene las columnas requeridas: 'name', 'total_sales'."
+        )
+        return
+
+    if not pd.api.types.is_numeric_dtype(dataframe["total_sales"]):
+        st.error("La columna 'total_sales' debe contener valores numéricos.")
+        return
+
+    # Calcular el porcentaje
+    dataframe = dataframe.copy()
+    total_sales_sum = dataframe["total_sales"].sum()
+    if total_sales_sum == 0:
+        st.warning("Las ventas totales son cero. No se puede generar la gráfica.")
+        return
+
+    dataframe["percentage"] = (dataframe["total_sales"] / total_sales_sum) * 100
+
+    # Formatear valores para el tooltip
+    dataframe["formatted_sales"] = dataframe["total_sales"].apply(
+        lambda x: f"${x:,.2f}"
+    )
+    dataframe["formatted_percentage"] = dataframe["percentage"].apply(
+        lambda x: f"{x:.1f}%"
+    )
+
+    # Crear la gráfica de dona
+    chart = (
+        alt.Chart(dataframe)
+        .mark_arc(innerRadius=50, outerRadius=100)
+        .encode(
+            theta=alt.Theta(
+                field="total_sales", type="quantitative", title="Ventas Totales"
+            ),
+            color=alt.Color(field="name", type="nominal", title="Clientes"),
+            tooltip=[
+                alt.Tooltip("name:N", title="Cliente"),
+                alt.Tooltip("formatted_sales:N", title="Ventas"),
+                alt.Tooltip("formatted_percentage:N", title="Porcentaje"),
+            ],
+        )
+        .properties(width=400, height=400, title="Top de Clientes (Dona)")
+    )
+
+    # Renderizar la gráfica en Streamlit
+    st.altair_chart(chart, use_container_width=True)

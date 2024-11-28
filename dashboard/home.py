@@ -281,3 +281,12 @@ with st.container():
     with col2:
         # Llamar a la función y mostrar el gráfico
         st.altair_chart(chart, use_container_width=True)
+
+with st.container():
+    top_clients_filtered = data["sales_array_filtered"][["name", "total_sales"]]
+    top_clients = utilities.get_top(
+        top_clients_filtered, "name", "total_sales", number_of_entries
+    )
+    col1, col2 = st.columns(2)
+    with col1:
+        utilities.generate_donut_chart(top_clients)
