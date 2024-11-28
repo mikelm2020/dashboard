@@ -503,6 +503,31 @@ def get_data(database_number: int, year: int, month: int = None):
         has_sales_vs_profits = False
         st.warning("No hay datos de ventas y ganancias disponibles")
 
+    # Gets all sales by towns in the system
+    sales_by_towns_array = fetch_dashboard_data("sales-by-towns", database_number)
+
+    if not sales_by_towns_array.empty:
+        has_sales_by_towns = True
+        if month is None:
+            title_header_sales_by_towns = f"Ventas del año {year}"
+            # Filters rows where the year matches
+            sales_by_towns_array_filtered = sales_by_towns_array[
+                sales_by_towns_array["year_concept"] == year
+            ]
+            total_sales_by_towns = sales_by_towns_array_filtered["total_sales"].sum()
+        else:
+            title_header_sales_by_towns = f"Ventas del mes del año {year}"
+            # Filters rows where the month and year match
+            sales_by_towns_array_filtered = sales_by_towns_array[
+                (sales_by_towns_array["month_concept"] == month)
+                & (sales_by_towns_array["year_concept"] == year)
+            ]
+            total_sales_by_towns = sales_by_towns_array_filtered["total_sales"].sum()
+
+    else:  # If there is no data, display a warning message
+        st.warning("No hay datos de ventas disponibles")
+        has_sales_by_towns = False
+
     # Return the data as a dictionary
     return {
         "has_sales": has_sales,
@@ -549,6 +574,11 @@ def get_data(database_number: int, year: int, month: int = None):
         "purchases_by_product_array": purchases_by_product_array,
         "sales_vs_profits_array": sales_vs_profits_array,
         "has_sales_vs_profits": has_sales_vs_profits,
+        "has_sales_by_towns": has_sales_by_towns,
+        "title_header_sales_by_towns": title_header_sales_by_towns,
+        "total_sales_by_towns": total_sales_by_towns,
+        "sales_by_towns_array": sales_by_towns_array,
+        "sales_by_towns_array_filtered": sales_by_towns_array_filtered,
     }
 
 
@@ -737,13 +767,15 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
     return chart
 
 
-def generate_donut_chart(dataframe):
+def generate_donut_chart(dataframe, name_title: str, tooltip_name_title: str):
     """
-    Genera una gráfica de dona con Altair para el top de clientes.
+    Genera una gráfica de dona con Altair para el top.
     Incluye formato manual para el símbolo de pesos y porcentaje.
 
     Args:
         dataframe (pd.DataFrame): DataFrame con las columnas 'name' y 'total_sales'.
+        name_title str: title for the element name of the top.
+        tooltip_name_title str: title for the tooltip of element name of the top.
     """
     if dataframe.empty:
         st.warning("No hay datos para mostrar en el top de clientes.")
@@ -784,14 +816,14 @@ def generate_donut_chart(dataframe):
             theta=alt.Theta(
                 field="total_sales", type="quantitative", title="Ventas Totales"
             ),
-            color=alt.Color(field="name", type="nominal", title="Clientes"),
+            color=alt.Color(field="name", type="nominal", title=name_title),
             tooltip=[
-                alt.Tooltip("name:N", title="Cliente"),
+                alt.Tooltip("name:N", title=tooltip_name_title),
                 alt.Tooltip("formatted_sales:N", title="Ventas"),
                 alt.Tooltip("formatted_percentage:N", title="Porcentaje"),
             ],
         )
-        .properties(width=400, height=400, title="Top de Clientes (Dona)")
+        .properties(width=400, height=400, title=f"Top de {name_title} (Dona)")
     )
 
     # Renderizar la gráfica en Streamlit

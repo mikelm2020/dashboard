@@ -74,7 +74,7 @@ def get_sales(db_number: int = 1):
     final_query = ""
 
     invoices_table, clients_table = get_table_name(db_number, "FACTF", "CLIE")
-    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {clients_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS = 'E') AND b.NOMBRE IS NOT NULL"
+    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {clients_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS = 'E') AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')"
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
@@ -125,7 +125,7 @@ def get_purchases(db_number: int = 1):
 
     final_query = ""
     purchases_table, providers_table = get_table_name(db_number, "COMPC", "PROV")
-    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_purchases FROM {purchases_table} AS a INNER JOIN {providers_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS <> 'C') AND b.NOMBRE IS NOT NULL"
+    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_purchases FROM {purchases_table} AS a INNER JOIN {providers_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS <> 'C') AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')"
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
@@ -175,7 +175,7 @@ def get_sales_of_seller(db_number: int = 1):
 
     final_query = ""
     invoices_table, sellers_table = get_table_name(db_number, "FACTF", "VEND")
-    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {sellers_table} AS b ON a.CVE_VEND = b.CVE_VEND WHERE (a.STATUS = 'E') AND b.NOMBRE IS NOT NULL"
+    query = f"SELECT  b.NOMBRE AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {sellers_table} AS b ON a.CVE_VEND = b.CVE_VEND WHERE (a.STATUS = 'E') AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')"
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
@@ -225,7 +225,7 @@ def get_sales_of_products(db_number: int = 1):
 
     final_query = ""
     movs_table, inventory_table = get_table_name(db_number, "MINVE", "INVE")
-    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'F' AND a.CVE_CPTO=51) AND b.DESCR IS NOT NULL"
+    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'F' AND a.CVE_CPTO=51) AND (b.DESCR IS NOT NULL AND b.DESCR <> '')"
 
     final_query = f" GROUP BY b.DESCR, {month_instruction[1]}, {year_instruction[1]}"
 
@@ -324,7 +324,7 @@ def get_purchases_of_goods(db_number: int = 1):
 
     final_query = ""
     movs_table, inventory_table = get_table_name(db_number, "MINVE", "INVE")
-    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'c' AND a.CVE_CPTO=1) AND b.DESCR IS NOT NULL"
+    query = f"SELECT  b.DESCR AS name, {month_instruction[1]} AS month_concept, {year_instruction[1]} AS year_concept,  SUM(a.CANT) AS total_qty FROM {movs_table} AS a INNER JOIN {inventory_table} AS b ON a.CVE_ART = b.CVE_ART WHERE (a.TIPO_DOC = 'c' AND a.CVE_CPTO=1) AND (b.DESCR IS NOT NULL AND b.DESCR <> '')"
 
     final_query = f" GROUP BY b.DESCR, {month_instruction[1]}, {year_instruction[1]}"
 
@@ -400,6 +400,59 @@ def get_sales_vs_profit(db_number: int = 1):
                 "movement_date": row[0],
                 "sales": row[1],
                 "profit": row[2],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for sales vector for obtain sales by towns
+@app.get("/sales-by-towns/", response_model=List[SalesVector])
+def get_sales_by_town(db_number: int = 1):
+    """
+    Endpoint to get sales by towns data from the database.
+
+    Returns a list of SalesVector objects containing the name of the town, the month and year of the sale, and the total sales amount.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+
+    invoices_table, clients_table = get_table_name(db_number, "FACTF", "CLIE")
+    query = f"SELECT  b.MUNICIPIO AS name, {month_instruction[0]} AS month_concept, {year_instruction[0]} AS year_concept,  SUM(a.CAN_TOT) AS total_sales FROM {invoices_table} AS a INNER JOIN {clients_table} AS b ON a.CVE_CLPV = b.CLAVE WHERE (a.STATUS = 'E') AND (b.MUNICIPIO IS NOT NULL AND b.MUNICIPIO <> '')"
+
+    final_query = (
+        f" GROUP BY b.MUNICIPIO, {month_instruction[0]}, {year_instruction[0]}"
+    )
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "name": row[0],
+                "month_concept": row[1],
+                "year_concept": row[2],
+                "total_sales": row[3],
             }
             for row in results
         ]

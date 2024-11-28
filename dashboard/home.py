@@ -287,6 +287,12 @@ with st.container():
     top_clients = utilities.get_top(
         top_clients_filtered, "name", "total_sales", number_of_entries
     )
+    top_towns_filtered = data["sales_by_towns_array_filtered"][["name", "total_sales"]]
+    top_towns = utilities.get_top(
+        top_towns_filtered, "name", "total_sales", number_of_entries
+    )
     col1, col2 = st.columns(2)
     with col1:
-        utilities.generate_donut_chart(top_clients)
+        utilities.generate_donut_chart(top_clients, "Clientes", "Cliente")
+    with col2:
+        utilities.generate_donut_chart(top_towns, "Municipios", "Municipio")
