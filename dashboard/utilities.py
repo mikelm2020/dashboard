@@ -494,6 +494,15 @@ def get_data(database_number: int, year: int, month: int = None):
         has_goods = False
         st.warning("No hay datos de compras por producto disponibles")
 
+    # Gets all sales and profits in the system
+    sales_vs_profits_array = fetch_dashboard_data("sales-vs-profit", database_number)
+    if not sales_vs_profits_array.empty:
+        has_sales_vs_profits = True
+
+    else:  # If there is no data, display a warning message
+        has_sales_vs_profits = False
+        st.warning("No hay datos de ventas y ganancias disponibles")
+
     # Return the data as a dictionary
     return {
         "has_sales": has_sales,
@@ -538,6 +547,8 @@ def get_data(database_number: int, year: int, month: int = None):
         "title_header_goods": title_header_goods,
         "total_purchases_qty_by_product": total_purchases_qty_by_product,
         "purchases_by_product_array": purchases_by_product_array,
+        "sales_vs_profits_array": sales_vs_profits_array,
+        "has_sales_vs_profits": has_sales_vs_profits,
     }
 
 
@@ -616,3 +627,111 @@ def plot_sales_vs_profits(data):
 
     # Mostrar la gráfica con Streamlit
     st.altair_chart(chart, use_container_width=True)
+
+
+def create_weekly_stacked_chart(dataframe, filter_current_week=True):
+    """
+    Crea un gráfico de barras apiladas para mostrar ventas y ganancias por semana.
+
+    Args:
+        dataframe (pd.DataFrame): DataFrame con las columnas `movement_date`, `sales` y `profit`.
+        filter_current_week (bool): Si es True, filtra para mostrar solo la semana actual.
+
+    Returns:
+        alt.Chart: Gráfico de Altair.
+    """
+    # Asegurar que movement_date es datetime
+    if not pd.api.types.is_datetime64_any_dtype(dataframe["movement_date"]):
+        dataframe["movement_date"] = pd.to_datetime(
+            dataframe["movement_date"], errors="coerce"
+        )
+
+    # Verificar si hay valores no convertibles
+    if dataframe["movement_date"].isnull().any():
+        raise ValueError(
+            "La columna 'movement_date' contiene valores no válidos para fechas."
+        )
+
+    # Obtener la fecha actual y el número de semana actual
+    today = pd.Timestamp.now()
+    current_week = today.isocalendar().week
+
+    # Agregar columna con el nombre del día de la semana
+    dataframe["day_name"] = dataframe["movement_date"].dt.day_name(locale="es_ES")
+
+    # Filtrar la semana en curso si se requiere
+    if filter_current_week:
+        dataframe["week"] = dataframe["movement_date"].dt.isocalendar().week
+        dataframe = dataframe[dataframe["week"] == current_week]
+        # Calcular el rango de fechas de la semana actual
+        week_start = today - pd.Timedelta(days=today.weekday())
+        week_end = week_start + pd.Timedelta(days=6)
+    else:
+        # Calcular el rango de fechas completo
+        week_start = dataframe["movement_date"].min()
+        week_end = dataframe["movement_date"].max()
+
+    # Verificar si hay datos en el rango seleccionado
+    if dataframe.empty:
+        raise ValueError("No hay datos disponibles para el rango seleccionado.")
+
+    # Crear el título dinámico con el rango de fechas
+    title = f"Semana del {week_start.strftime('%d/%m/%Y')} al {week_end.strftime('%d/%m/%Y')}"
+
+    # Agrupar por día de la semana
+    daily_data = dataframe.groupby("day_name")[["sales", "profit"]].sum().reset_index()
+
+    # Traducir las columnas
+    daily_data = daily_data.rename(columns={"sales": "Ventas", "profit": "Ganancias"})
+
+    # Dividir valores en miles para simplificar
+    daily_data["Ventas"] /= 1000
+    daily_data["Ganancias"] /= 1000
+
+    # Transformar datos al formato largo (long format)
+    long_format = daily_data.melt(
+        id_vars=["day_name"], var_name="tipo", value_name="monto"
+    )
+
+    # Crear el gráfico
+    chart = (
+        alt.Chart(long_format)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "day_name:N",
+                title="Día de la Semana",
+                sort=[
+                    "lunes",
+                    "martes",
+                    "miércoles",
+                    "jueves",
+                    "viernes",
+                    "sábado",
+                    "domingo",
+                ],
+            ),
+            y=alt.Y("monto:Q", title="Cantidad (en miles de pesos)"),
+            color=alt.Color(
+                "tipo:N",
+                title="Tipo de Movimiento",
+                scale=alt.Scale(
+                    domain=["Ventas", "Ganancias"], range=["#1f77b4", "#ff7f0e"]
+                ),
+            ),
+            tooltip=[
+                alt.Tooltip("tipo:N", title="Tipo"),
+                alt.Tooltip("monto:Q", title="Monto (K)", format=",.1f"),
+            ],
+        )
+        .properties(
+            title=alt.TitleParams(
+                text=title,  # Título dinámico
+                fontSize=16,
+                anchor="start",
+            ),
+            width=700,
+            height=400,
+        )
+    )
+    return chart

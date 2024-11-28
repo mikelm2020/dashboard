@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 
 
@@ -40,3 +42,9 @@ class GoodsVector(BaseModel):
     month_concept: int
     year_concept: int
     total_qty: float
+
+
+class SalesVsProfitVector(BaseModel):
+    movement_date: date
+    sales: float
+    profit: float

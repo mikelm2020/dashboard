@@ -10,6 +10,7 @@ from schemas import (
     ProductsVector,
     PurchasesVector,
     SalesVector,
+    SalesVsProfitVector,
     SellersVector,
 )
 
@@ -350,6 +351,55 @@ def get_purchases_of_goods(db_number: int = 1):
                 "month_concept": row[1],
                 "year_concept": row[2],
                 "total_qty": row[3],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for sales vs profit
+@app.get("/sales-vs-profit/", response_model=List[SalesVsProfitVector])
+def get_sales_vs_profit(db_number: int = 1):
+    """
+    Endpoint to get sales and profit data from the database.
+
+    Returns a list of SalesVsProfitVector objects containing the date of the sale, and the profit margin.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+    invoices_table, splits_table = get_table_name(db_number, "FACTF", "PAR_FACTF")
+    query = f"SELECT a.FECHA_DOC AS movement_date, SUM(b.CANT * b.PREC) AS sales,  SUM(b.CANT * b.PREC) - SUM(b.CANT*b.COST) AS profit FROM {invoices_table} AS a INNER JOIN {splits_table} AS b ON a.CVE_DOC = b.CVE_DOC WHERE (a.STATUS = 'E')"
+
+    final_query = " GROUP BY a.FECHA_DOC"
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "movement_date": row[0],
+                "sales": row[1],
+                "profit": row[2],
             }
             for row in results
         ]

@@ -260,8 +260,24 @@ combined_df = pd.merge(
     on=["month_concept", "year_concept"],
     how="inner",
 )
+
+# data for weekly stacked chart
+data["sales_vs_profits_array"]["movement_date"] = pd.to_datetime(
+    data["sales_vs_profits_array"]["movement_date"], errors="coerce"
+)
+data["sales_vs_profits_array"] = data["sales_vs_profits_array"].dropna(
+    subset=["movement_date"]
+)  # Elimina filas con fechas inválidas
+
+chart = utilities.create_weekly_stacked_chart(
+    data["sales_vs_profits_array"], filter_current_week=True
+)
+
 with st.container():
     col1, col2 = st.columns([2, 1])
     with col1:
         # Llamar a la función de graficado con el DataFrame combinado
         utilities.plot_sales_vs_profits(combined_df)
+    with col2:
+        # Llamar a la función y mostrar el gráfico
+        st.altair_chart(chart, use_container_width=True)
