@@ -10,6 +10,8 @@ from schemas import (
     LinesVector,
     ProductsVector,
     PurchasesVector,
+    SalesByClientVector,
+    SalesByProductVector,
     SalesVector,
     SalesVsProfitVector,
     SellersVector,
@@ -76,13 +78,15 @@ def get_sales(db_number: int = 1):
     """
     Endpoint to get sales data from the database.
 
-    Returns a list of SalesVector objects containing the name of the client, the month and year of the sale, and the total sales amount.
+    Returns a list of SalesVector objects containing the name of the client,
+    the month and year of the sale, and the total sales amount.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -143,7 +147,8 @@ def get_purchases(db_number: int = 1):
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -195,13 +200,15 @@ def get_sales_of_seller(db_number: int = 1):
     """
     Endpoint to get sales data by salesperson from the database.
 
-    Returns a list of SellersVector objects containing the name of the salesperson, the month and year of the sale, and the total sales amount.
+    Returns a list of SellersVector objects containing the name of the salesperson,
+    the month and year of the sale, and the total sales amount.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -253,13 +260,15 @@ def get_sales_of_products(db_number: int = 1):
     """
     Endpoint to get sales data by product from the database.
 
-    Returns a list of ProductsVector objects containing the name of the product, the month and year of the sale, and the total quantity sold.
+    Returns a list of ProductsVector objects containing the name of the product,
+    the month and year of the sale, and the total quantity sold.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -312,13 +321,15 @@ def get_gross_profit_margin(db_number: int = 1):
     """
     Endpoint to get gross profit margin data from the database.
 
-    Returns a list of GrossProftMarginVector objects containing the month and year of the sale, and the total gross profit margin.
+    Returns a list of GrossProftMarginVector objects containing the month and year of the sale,
+    and the total gross profit margin.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -368,13 +379,15 @@ def get_purchases_of_goods(db_number: int = 1):
     """
     Endpoint to get purchases data by product from the database.
 
-    Returns a list of GoodsVector objects containing the name of the product, the month and year of the purchase, and the total quantity shopped.
+    Returns a list of GoodsVector objects containing the name of the product,
+    the month and year of the purchase, and the total quantity shopped.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -433,7 +446,8 @@ def get_sales_vs_profit(db_number: int = 1):
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -483,13 +497,15 @@ def get_sales_by_town(db_number: int = 1):
     """
     Endpoint to get sales by towns data from the database.
 
-    Returns a list of SalesVector objects containing the name of the town, the month and year of the sale, and the total sales amount.
+    Returns a list of SalesVector objects containing the name of the town,
+    the month and year of the sale, and the total sales amount.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -545,13 +561,16 @@ def get_sales_by_line(db_number: int = 1):
     """
     Endpoint to get sales, profit and product quantity by lines data from the database.
 
-    Returns a list of LinesVector objects containing the name of the line, the month and year of the sale, the total sales amount, the profit_amount and total_qty for products with this line.
+    Returns a list of LinesVector objects containing the name of the line,
+    the month and year of the sale, the sales amount,
+    the profit amount and qty for products with this line.
 
     The query is constructed using the instructions for the current database manager system (DBMS).
 
     If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
 
-    If the DBMS is FIREBIRD, the results are returned as a list of tuples, which are then converted to a list of dictionaries.
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
     """
 
     final_query = ""
@@ -574,6 +593,143 @@ def get_sales_by_line(db_number: int = 1):
     """
 
     final_query = f" GROUP BY b.DESC_LIN, {month_instruction[1]}, {year_instruction[1]}"
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "name": row[0],
+                "month_concept": row[1],
+                "year_concept": row[2],
+                "sales": row[3],
+                "profit": row[4],
+                "qty": row[5],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for SalesByProduct vector for obtain sales and profit by products
+@app.get("/sales-by-products/", response_model=List[SalesByProductVector])
+def get_sales_by_products(db_number: int = 1):
+    """
+    Endpoint to get sales, profit and product quantity by products data from the database.
+
+    Returns a list of SalesByProductVector objects containing the name of the product,
+    the month and year of the sale, the sales amount,
+    the profit amount and qty for products with this product.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+
+    movs_table, inven_table = get_table_name(db_number, "MINVE", "INVE")
+    query = f"""
+    SELECT b.DESCR,
+    {month_instruction[1]} AS month_concept, 
+    {year_instruction[1]} AS year_concept,
+    SUM((a.CANT*a.PRECIO)) as sales, 
+    SUM((a.CANT*a.PRECIO)-(a.CANT*a.COSTO)) as profit, 
+    COUNT(a.CVE_ART) AS qty
+    FROM {movs_table} a, {inven_table} b
+    WHERE a.CVE_ART=b.CVE_ART
+    AND a.CVE_CPTO=51
+    AND a.TIPO_DOC='F'
+    AND (b.DESCR IS NOT NULL AND b.DESCR <> '')
+    """
+
+    final_query = f" GROUP BY b.DESCR, {month_instruction[1]}, {year_instruction[1]}"
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "name": row[0],
+                "month_concept": row[1],
+                "year_concept": row[2],
+                "sales": row[3],
+                "profit": row[4],
+                "qty": row[5],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for SalesByClient vector for obtain sales and profit by clients
+@app.get("/sales-by-clients/", response_model=List[SalesByClientVector])
+def get_sales_by_client(db_number: int = 1):
+    """
+    Endpoint to get sales, profit and clients quantity by client data from the database.
+
+    Returns a list of SalesByClientVector objects containing the name of the client,
+    the month and year of the sale, the sales amount,
+    the profit amount and qty for clients with this client.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+
+    invoice_table, clients_table, part_table = get_table_name(
+        db_number, "FACTF", "CLIE", "PAR_FACTF"
+    )
+    query = f"""
+    SELECT b.NOMBRE AS name,
+    {month_instruction[0]} AS month_concept, 
+    {year_instruction[0]} AS year_concept,
+    SUM((c.CANT*c.PREC)) as sales, 
+    SUM((c.CANT*c.PREC)-(c.CANT*c.COST)) as profit, 
+    COUNT(b.CLAVE) AS qty
+    FROM {invoice_table} a, {clients_table} b, {part_table} c
+    WHERE a.CVE_CLPV=b.CLAVE
+    AND a.CVE_DOC=c.CVE_DOC
+    AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
+    """
+
+    final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
 
     query += final_query
 

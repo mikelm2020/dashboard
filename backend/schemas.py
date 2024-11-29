@@ -57,3 +57,21 @@ class LinesVector(BaseModel):
     sales: float
     profit: float
     qty: float
+
+
+class SalesByProductVector(BaseModel):
+    name: str
+    month_concept: int
+    year_concept: int
+    sales: float
+    profit: float
+    qty: float
+
+
+class SalesByClientVector(BaseModel):
+    name: str
+    month_concept: int
+    year_concept: int
+    sales: float
+    profit: float
+    qty: float

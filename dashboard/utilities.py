@@ -592,6 +592,68 @@ def get_data(database_number: int, year: int, month: int = None):
         st.warning("No hay datos de ventas disponibles")
         has_sales_by_lines = False
 
+    # Gets all sales, profits and qty by products in the system
+    sales_profits_by_products_array = fetch_dashboard_data(
+        "sales-by-products", database_number
+    )
+
+    if not sales_profits_by_products_array.empty:
+        has_sales_profits_by_products = True
+        if month is None:
+            title_header_sales_profits_by_products = f"Ventas del año {year}"
+            # Filters rows where the year matches
+            sales_profits_by_products_array_filtered = sales_profits_by_products_array[
+                sales_profits_by_products_array["year_concept"] == year
+            ]
+            total_sales_profits_by_products = sales_profits_by_products_array_filtered[
+                "sales"
+            ].sum()
+        else:
+            title_header_sales_profits_by_products = f"Ventas del mes del año {year}"
+            # Filters rows where the month and year match
+            sales_profits_by_products_array_filtered = sales_profits_by_products_array[
+                (sales_profits_by_products_array["month_concept"] == month)
+                & (sales_profits_by_products_array["year_concept"] == year)
+            ]
+            total_sales_profits_by_products = sales_profits_by_products_array_filtered[
+                "sales"
+            ].sum()
+
+    else:  # If there is no data, display a warning message
+        st.warning("No hay datos de ventas disponibles")
+        has_sales_profits_by_products = False
+
+    # Gets all sales, profits and qty by clients in the system
+    sales_profits_by_clients_array = fetch_dashboard_data(
+        "sales-by-clients", database_number
+    )
+
+    if not sales_profits_by_clients_array.empty:
+        has_sales_profits_by_clients = True
+        if month is None:
+            title_header_sales_profits_by_clients = f"Ventas del año {year}"
+            # Filters rows where the year matches
+            sales_profits_by_clients_array_filtered = sales_profits_by_clients_array[
+                sales_profits_by_clients_array["year_concept"] == year
+            ]
+            total_sales_profits_by_clients = sales_profits_by_clients_array_filtered[
+                "sales"
+            ].sum()
+        else:
+            title_header_sales_profits_by_clients = f"Ventas del mes del año {year}"
+            # Filters rows where the month and year match
+            sales_profits_by_clients_array_filtered = sales_profits_by_clients_array[
+                (sales_profits_by_clients_array["month_concept"] == month)
+                & (sales_profits_by_clients_array["year_concept"] == year)
+            ]
+            total_sales_profits_by_clients = sales_profits_by_clients_array_filtered[
+                "sales"
+            ].sum()
+
+    else:  # If there is no data, display a warning message
+        st.warning("No hay datos de ventas disponibles")
+        has_sales_profits_by_clients = False
+
     # Return the data as a dictionary
     return {
         "has_sales": has_sales,
@@ -648,6 +710,16 @@ def get_data(database_number: int, year: int, month: int = None):
         "total_sales_by_lines": total_sales_by_lines,
         "sales_by_lines_array": sales_by_lines_array,
         "sales_by_lines_array_filtered": sales_by_lines_array_filtered,
+        "has_sales_profits_by_products": has_sales_profits_by_products,
+        "title_header_sales_profits_by_products": title_header_sales_profits_by_products,
+        "total_sales_profits_by_products": total_sales_profits_by_products,
+        "sales_profits_by_products_array": sales_profits_by_products_array,
+        "sales_profits_by_products_array_filtered": sales_profits_by_products_array_filtered,
+        "has_sales_profits_by_clients": has_sales_profits_by_clients,
+        "title_header_sales_profits_by_clients": title_header_sales_profits_by_clients,
+        "total_sales_profits_by_clients": total_sales_profits_by_clients,
+        "sales_profits_by_clients_array": sales_profits_by_clients_array,
+        "sales_profits_by_clients_array_filtered": sales_profits_by_clients_array_filtered,
     }
 
 

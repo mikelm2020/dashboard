@@ -58,7 +58,7 @@ with st.container():
                 "mean",
             )
             utilities.get_metric(
-                ":material/sell: Compras Promedio",
+                ":material/shopping_cart: Compras Promedio",
                 data["average_purchases"],
                 "K",
                 delta_average_purchases,
@@ -79,7 +79,7 @@ with st.container():
                 "median",
             )
             utilities.get_metric(
-                ":material/sell: Mediana Compras",
+                ":material/shopping_cart: Mediana Compras",
                 data["median_purchases"],
                 "K",
                 delta_median_purchases,
@@ -100,7 +100,7 @@ with st.container():
                 "max",
             )
             utilities.get_metric(
-                ":material/sell: Maxima Compra",
+                ":material/shopping_cart: Maxima Compra",
                 data["max_purchases"],
                 "K",
                 delta_max_purchases,
@@ -121,7 +121,7 @@ with st.container():
                 "min",
             )
             utilities.get_metric(
-                ":material/sell: Minima Compra",
+                ":material/shopping_cart: Minima Compra",
                 data["min_purchases"],
                 "K",
                 delta_min_purchases,

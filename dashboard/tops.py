@@ -65,3 +65,49 @@ column_map = {
 st.header("Top de Líneas")
 with st.container():
     utilities.create_table(top_lines, column_map)
+
+# Obtain the top products table
+top_products_filtered = data["sales_profits_by_products_array_filtered"][
+    ["name", "sales", "profit", "qty"]
+]
+top_products = utilities.get_top_multiple_agg(
+    data["sales_profits_by_products_array_filtered"],
+    "name",
+    "sales",
+    "profit",
+    "qty",
+    number_of_entries,
+)
+column_map_products = {
+    "name": "Producto",
+    "sales": "Venta",
+    "profit": "Ganancia",
+    "qty": "Cantidad",
+}
+
+st.header("Top de Productos")
+with st.container():
+    utilities.create_table(top_products, column_map_products)
+
+# Obtain the top clients table
+top_clients_filtered = data["sales_profits_by_clients_array_filtered"][
+    ["name", "sales", "profit", "qty"]
+]
+top_clients = utilities.get_top_multiple_agg(
+    data["sales_profits_by_clients_array_filtered"],
+    "name",
+    "sales",
+    "profit",
+    "qty",
+    number_of_entries,
+)
+column_map_clients = {
+    "name": "Cliente",
+    "sales": "Venta",
+    "profit": "Ganancia",
+    "qty": "Cantidad",
+}
+
+st.header("Top de Clientes")
+with st.container():
+    utilities.create_table(top_clients, column_map_clients)
