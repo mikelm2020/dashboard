@@ -76,12 +76,16 @@ if st.session_state["authentication_status"]:
 
     if user_role == "viewer":
         pages = {
-            "Dashboard": [st.Page("dashboard.py", title="Dashboard")],
+            "Home": [st.Page("home.py", title="Home")],
         }
     elif user_role == "admin":  # For future use
         pages = {
-            "Dashboard": [st.Page("dashboard.py", title="Dashboard")],
             "Home": [st.Page("home.py", title="Home")],
+            "Tops": [st.Page("tops.py", title="Tops")],
+            "Estadisicas": [
+                st.Page("sales.py", title="Estadisticas de Ventas"),
+                st.Page("purchases.py", title="Estaditicas de Compras"),
+            ],
         }
 
         # Contenedor exclusivo para el menú de navegación

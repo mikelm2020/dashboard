@@ -922,6 +922,10 @@ def create_table(dataframe, column_map):
         column_map (dict): Diccionario que mapea los nombres originales de las columnas a nombres personalizados.
     """
 
+    # Dividir montos entre 1000 y agregar "K" al formato
+    dataframe["sales"] = dataframe["sales"] / 1000
+    dataframe["profit"] = dataframe["profit"] / 1000
+
     # Seleccionar las columnas del diccionario y renombrar para visualización
     displayed_df = dataframe[list(column_map.keys())]
     displayed_df.columns = [column_map[col] for col in displayed_df.columns]
@@ -944,6 +948,11 @@ def create_table(dataframe, column_map):
                 }
             ]
         ).format(
-            {"Venta": "${:,.2f}", "Ganancia": "${:,.2f}"}
-        )  # Formato para columnas específicas
+            {
+                "Venta": "${:,.2f}K",
+                "Ganancia": "${:,.2f}K",
+                "Cantidad": "{:,.1f}",
+            }  # Formato para columnas específicas
+        ),
+        use_container_width=True,
     )

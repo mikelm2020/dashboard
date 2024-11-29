@@ -314,24 +314,7 @@ with st.container():
         "total_qty",
         number_of_entries,
     )
-    # # Obtain the top lines table
-    # top_lines_filtered = data["sales_by_lines_array_filtered"][
-    #     ["name", "sales", "profit", "qty"]
-    # ]
-    # top_lines = utilities.get_top_multiple_agg(
-    #     data["sales_by_lines_array_filtered"],
-    #     "name",
-    #     "sales",
-    #     "profit",
-    #     "qty",
-    #     number_of_entries,
-    # )
-    # column_map = {
-    #     "name": "Línea",
-    #     "sales": "Venta",
-    #     "profit": "Ganancia",
-    #     "qty": "Cantidad",
-    # }
+
     top_lines_filtered = data["sales_by_lines_array_filtered"][["name", "sales"]]
     top_lines = utilities.get_top(
         data["sales_by_lines_array_filtered"],
