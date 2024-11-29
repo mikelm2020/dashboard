@@ -293,6 +293,55 @@ with st.container():
     )
     col1, col2 = st.columns(2)
     with col1:
-        utilities.generate_donut_chart(top_clients, "Clientes", "Cliente")
+        utilities.generate_donut_chart(
+            top_clients, "Clientes", "Cliente", "total_sales"
+        )
     with col2:
-        utilities.generate_donut_chart(top_towns, "Municipios", "Municipio")
+        utilities.generate_donut_chart(
+            top_towns, "Municipios", "Municipio", "total_sales"
+        )
+
+with st.container():
+    col1, col2 = st.columns(2)
+
+    # Obtain Top N Products
+    top_products_filtered = data["sales_by_product_array_filtered"][
+        ["name", "total_qty"]
+    ]
+    top_products = utilities.get_top(
+        data["sales_by_product_array_filtered"],
+        "name",
+        "total_qty",
+        number_of_entries,
+    )
+    # # Obtain the top lines table
+    # top_lines_filtered = data["sales_by_lines_array_filtered"][
+    #     ["name", "sales", "profit", "qty"]
+    # ]
+    # top_lines = utilities.get_top_multiple_agg(
+    #     data["sales_by_lines_array_filtered"],
+    #     "name",
+    #     "sales",
+    #     "profit",
+    #     "qty",
+    #     number_of_entries,
+    # )
+    # column_map = {
+    #     "name": "Línea",
+    #     "sales": "Venta",
+    #     "profit": "Ganancia",
+    #     "qty": "Cantidad",
+    # }
+    top_lines_filtered = data["sales_by_lines_array_filtered"][["name", "sales"]]
+    top_lines = utilities.get_top(
+        data["sales_by_lines_array_filtered"],
+        "name",
+        "sales",
+        number_of_entries,
+    )
+    with col1:
+        utilities.generate_donut_chart(top_lines, "Líneas", "Línea", "sales")
+    with col2:
+        utilities.generate_donut_chart(
+            top_products, "Productos", "Producto", "total_qty", False
+        )

@@ -247,6 +247,45 @@ def get_top(
     return df
 
 
+def get_top_multiple_agg(
+    filtered_df: pd.DataFrame,
+    group_column: str,
+    mount_column: str,
+    aggregate_column_one: str,
+    aggregate_column_two: str,
+    top_n: int,
+):
+    """
+    Filters the top N entries from a DataFrame based on a specified column and 2 aggregates more.
+
+    Args:
+        filtered_df (pd.DataFrame): The DataFrame to filter and sort.
+        group_column (str): The column to group the DataFrame by.
+        mount_column (str): The column whose values are to be summed and sorted.
+        aggregate_column_one (str): Aggregate mumber one column name.
+        aggregate_column_two (str): Aggregate number two column name.
+        top_n (int): The number of top entries to return.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the top 5 entries with the highest sums in the specified column.
+    """
+
+    df = (
+        filtered_df.groupby(group_column, as_index=False)
+        .agg(
+            {
+                mount_column: "sum",
+                aggregate_column_one: "sum",
+                aggregate_column_two: "sum",
+            }
+        )
+        .reset_index()
+        .sort_values(by=mount_column, ascending=False)
+        .head(top_n)
+    )
+    return df
+
+
 def format_top_dataframe(
     df: pd.DataFrame,
     subject_column: str,
@@ -528,6 +567,31 @@ def get_data(database_number: int, year: int, month: int = None):
         st.warning("No hay datos de ventas disponibles")
         has_sales_by_towns = False
 
+    # Gets all sales by lines in the system
+    sales_by_lines_array = fetch_dashboard_data("sales-by-lines", database_number)
+
+    if not sales_by_lines_array.empty:
+        has_sales_by_lines = True
+        if month is None:
+            title_header_sales_by_lines = f"Ventas del año {year}"
+            # Filters rows where the year matches
+            sales_by_lines_array_filtered = sales_by_lines_array[
+                sales_by_lines_array["year_concept"] == year
+            ]
+            total_sales_by_lines = sales_by_lines_array_filtered["sales"].sum()
+        else:
+            title_header_sales_by_lines = f"Ventas del mes del año {year}"
+            # Filters rows where the month and year match
+            sales_by_lines_array_filtered = sales_by_lines_array[
+                (sales_by_lines_array["month_concept"] == month)
+                & (sales_by_lines_array["year_concept"] == year)
+            ]
+            total_sales_by_lines = sales_by_lines_array_filtered["sales"].sum()
+
+    else:  # If there is no data, display a warning message
+        st.warning("No hay datos de ventas disponibles")
+        has_sales_by_lines = False
+
     # Return the data as a dictionary
     return {
         "has_sales": has_sales,
@@ -579,6 +643,11 @@ def get_data(database_number: int, year: int, month: int = None):
         "total_sales_by_towns": total_sales_by_towns,
         "sales_by_towns_array": sales_by_towns_array,
         "sales_by_towns_array_filtered": sales_by_towns_array_filtered,
+        "has_sales_by_lines": has_sales_by_lines,
+        "title_header_sales_by_lines": title_header_sales_by_lines,
+        "total_sales_by_lines": total_sales_by_lines,
+        "sales_by_lines_array": sales_by_lines_array,
+        "sales_by_lines_array_filtered": sales_by_lines_array_filtered,
     }
 
 
@@ -767,7 +836,13 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
     return chart
 
 
-def generate_donut_chart(dataframe, name_title: str, tooltip_name_title: str):
+def generate_donut_chart(
+    dataframe,
+    name_title: str,
+    tooltip_name_title: str,
+    column_total_amount: str,
+    is_graphing_amounts=True,
+):
     """
     Genera una gráfica de dona con Altair para el top.
     Incluye formato manual para el símbolo de pesos y porcentaje.
@@ -776,34 +851,42 @@ def generate_donut_chart(dataframe, name_title: str, tooltip_name_title: str):
         dataframe (pd.DataFrame): DataFrame con las columnas 'name' y 'total_sales'.
         name_title str: title for the element name of the top.
         tooltip_name_title str: title for the tooltip of element name of the top.
+        column_total_amount str: name of the amouunt field
+        is_graphing_amounts bool: Are amounts being graphed?
     """
     if dataframe.empty:
-        st.warning("No hay datos para mostrar en el top de clientes.")
+        st.warning(f"No hay datos para mostrar en el top de {name_title}.")
         return
 
-    if not {"name", "total_sales"}.issubset(dataframe.columns):
+    if not {"name", column_total_amount}.issubset(dataframe.columns):
         st.error(
-            "El DataFrame no contiene las columnas requeridas: 'name', 'total_sales'."
+            f"El DataFrame no contiene las columnas requeridas: 'name', '{column_total_amount}'."
         )
         return
 
-    if not pd.api.types.is_numeric_dtype(dataframe["total_sales"]):
-        st.error("La columna 'total_sales' debe contener valores numéricos.")
+    if not pd.api.types.is_numeric_dtype(dataframe[column_total_amount]):
+        st.error(f"La columna '{column_total_amount}' debe contener valores numéricos.")
         return
 
     # Calcular el porcentaje
     dataframe = dataframe.copy()
-    total_sales_sum = dataframe["total_sales"].sum()
+    total_sales_sum = dataframe[column_total_amount].sum()
     if total_sales_sum == 0:
         st.warning("Las ventas totales son cero. No se puede generar la gráfica.")
         return
 
-    dataframe["percentage"] = (dataframe["total_sales"] / total_sales_sum) * 100
+    dataframe["percentage"] = (dataframe[column_total_amount] / total_sales_sum) * 100
 
     # Formatear valores para el tooltip
-    dataframe["formatted_sales"] = dataframe["total_sales"].apply(
-        lambda x: f"${x:,.2f}"
-    )
+    if is_graphing_amounts:
+        dataframe["formatted_sales"] = dataframe[column_total_amount].apply(
+            lambda x: f"${x:,.2f}"
+        )
+    else:
+        dataframe["formatted_sales"] = dataframe[column_total_amount].apply(
+            lambda x: f"{x:,.1f}"
+        )
+
     dataframe["formatted_percentage"] = dataframe["percentage"].apply(
         lambda x: f"{x:.1f}%"
     )
@@ -814,7 +897,7 @@ def generate_donut_chart(dataframe, name_title: str, tooltip_name_title: str):
         .mark_arc(innerRadius=50, outerRadius=100)
         .encode(
             theta=alt.Theta(
-                field="total_sales", type="quantitative", title="Ventas Totales"
+                field=column_total_amount, type="quantitative", title="Ventas Totales"
             ),
             color=alt.Color(field="name", type="nominal", title=name_title),
             tooltip=[
@@ -828,3 +911,39 @@ def generate_donut_chart(dataframe, name_title: str, tooltip_name_title: str):
 
     # Renderizar la gráfica en Streamlit
     st.altair_chart(chart, use_container_width=True)
+
+
+def create_table(dataframe, column_map):
+    """
+    Crea una tabla interactiva con filtros y encabezados personalizados.
+
+    Args:
+        dataframe (pd.DataFrame): El DataFrame con los datos originales.
+        column_map (dict): Diccionario que mapea los nombres originales de las columnas a nombres personalizados.
+    """
+
+    # Seleccionar las columnas del diccionario y renombrar para visualización
+    displayed_df = dataframe[list(column_map.keys())]
+    displayed_df.columns = [column_map[col] for col in displayed_df.columns]
+
+    # Mostrar el indice desde 1
+    displayed_df = displayed_df.reset_index(drop=True)
+    displayed_df.index = displayed_df.index + 1
+
+    # Mostrar la tabla con estilos
+    st.dataframe(
+        displayed_df.style.set_table_styles(
+            [
+                {
+                    "selector": "thead th",
+                    "props": [
+                        ("background-color", "#FFDDC1"),
+                        ("color", "black"),
+                        ("font-weight", "bold"),
+                    ],
+                }
+            ]
+        ).format(
+            {"Venta": "${:,.2f}", "Ganancia": "${:,.2f}"}
+        )  # Formato para columnas específicas
+    )

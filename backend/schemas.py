@@ -48,3 +48,12 @@ class SalesVsProfitVector(BaseModel):
     movement_date: date
     sales: float
     profit: float
+
+
+class LinesVector(BaseModel):
+    name: str
+    month_concept: int
+    year_concept: int
+    sales: float
+    profit: float
+    qty: float
