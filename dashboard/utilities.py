@@ -20,7 +20,7 @@ number_of_databases = int(os.getenv("NUMBER_OF_DATABASES"))
 number_of_entries = int(os.getenv("TOP_N"))
 
 
-# Convertir la imagen local a base64
+# Convert local image to base64
 def image_to_base64(image_path):
     """
     Reads an image file and converts it to a base64 encoded string.
@@ -45,9 +45,9 @@ def render_header(company_name, user_name, logo_base64):
         user_name (str): The name of the user.
         logo_base64 (str): The URL of the logo image.
     """
-    # Contenedor del header
+    # Header container
     with st.container():
-        # Aplicar estilos al contenedor completo
+        # Apply styles to the entire container
         st.markdown(
             f"""
             <div style="
@@ -797,20 +797,20 @@ def get_data(database_number: int, year: int, month: int = None):
 
 def plot_sales_vs_profits(data):
     """
-    Genera una gráfica de líneas con marcas para ventas y ganancias mensuales,
-    con formato 'K' y símbolo de moneda en el tooltip.
+    Generates a line graph with ticks for monthly sales and profits,
+    with 'K' format and currency symbol in the tooltip.
 
     Args:
-        data (pd.DataFrame): DataFrame con columnas:
+        data (pd.DataFrame): DataFrame with columns:
             - month_concept
             - year_concept
             - total_sales
             - total_gpm
     """
-    # Ordenar por mes para garantizar la secuencia
+    # Sort by month to ensure sequence
     data = data.sort_values("month_concept")
 
-    # Agregar nombres de los meses
+    # Add month names
     data["month_name"] = data["month_concept"].apply(
         lambda x: [
             "Enero",
@@ -828,7 +828,7 @@ def plot_sales_vs_profits(data):
         ][x - 1]
     )
 
-    # Cambiar formato para graficar ambas métricas en una sola columna
+    # Change format to graph both metrics in a single column
     melted_data = data.melt(
         id_vars=["month_name"],
         value_vars=["total_sales", "total_gpm"],
@@ -836,16 +836,16 @@ def plot_sales_vs_profits(data):
         value_name="Valor",
     )
 
-    # Mapear nombres descriptivos para las métricas
+    # Map friendly names to metrics
     metric_labels = {"total_sales": "Ventas", "total_gpm": "Ganancias"}
     melted_data["Métrica"] = melted_data["Métrica"].map(metric_labels)
 
-    # Formato de miles (K) y símbolo de moneda
+    # Thousands (K) format and currency symbol
     melted_data["Valor_formateado"] = melted_data["Valor"].apply(
         lambda x: f"${x/1000:,.1f}K"
     )
 
-    # Crear la gráfica con Altair
+    # Create the graph with Altair
     chart = (
         alt.Chart(melted_data)
         .mark_line(point=True)
@@ -868,83 +868,83 @@ def plot_sales_vs_profits(data):
         .properties(width=700, height=400, title="Ventas vs Ganancias Mensuales")
     )
 
-    # Mostrar la gráfica con Streamlit
+    # Show the graph with Streamlit
     st.altair_chart(chart, use_container_width=True)
 
 
 def create_weekly_stacked_chart(dataframe, filter_current_week=True):
     """
-    Crea un gráfico de barras apiladas para mostrar ventas y ganancias por semana.
+    Create a stacked bar chart to show sales and profits by week.
 
     Args:
-        dataframe (pd.DataFrame): DataFrame con las columnas `movement_date`, `sales` y `profit`.
-        filter_current_week (bool): Si es True, filtra para mostrar solo la semana actual.
+        dataframe (pd.DataFrame): DataFrame with columns `movement_date`, `sales` and `profit`.
+        filter_current_week (bool): If True, filters to show only the current week.
 
     Returns:
-        alt.Chart or str: Gráfico de Altair o mensaje si no hay datos disponibles.
+        alt.Chart or str: Altair chart or message if no data available.
     """
-    # Asegurar que movement_date es datetime
+    # Ensure movement_date is datetime
     if not pd.api.types.is_datetime64_any_dtype(dataframe["movement_date"]):
         dataframe["movement_date"] = pd.to_datetime(
             dataframe["movement_date"], errors="coerce"
         )
 
-    # Verificar si hay valores no convertibles
+    # Check for non-convertible securities
     if dataframe["movement_date"].isnull().any():
         raise ValueError(
             "La columna 'movement_date' contiene valores no válidos para fechas."
         )
 
-    # Obtener la fecha actual, número de semana y año actual
+    # Get current date, week number and current year
     today = pd.Timestamp.now()
     current_week = today.isocalendar().week
     current_year = today.isocalendar().year
 
-    # Agregar columna con el nombre del día de la semana
+    # Add column with the name of the day of the week
     dataframe["day_name"] = dataframe["movement_date"].dt.day_name(locale="es_ES")
 
-    # Filtrar por semana y año actual si se requiere
+    # Filter by week and current year if required
     if filter_current_week:
         dataframe["week"] = dataframe["movement_date"].dt.isocalendar().week
         dataframe["year"] = dataframe["movement_date"].dt.isocalendar().year
 
-        # Filtrar por año actual y semana actual
+        # Filter by current year and current week
         dataframe = dataframe[
             (dataframe["week"] == current_week) & (dataframe["year"] == current_year)
         ]
 
-        # Calcular el rango de fechas de la semana actual
+        # Calculate the date range of the current week
         week_start = today - pd.Timedelta(days=today.weekday())
         week_end = week_start + pd.Timedelta(days=6)
     else:
-        # Calcular el rango de fechas completo
+        # Calculate full date range
         week_start = dataframe["movement_date"].min()
         week_end = dataframe["movement_date"].max()
 
-    # Verificar si hay datos en el rango seleccionado
+    # Check if there is data in the selected range
     if dataframe.empty:
-        # Retornar un mensaje o un gráfico vacío
+        # Return an empty message or graphic
         return "No hay datos disponibles para el rango seleccionado."
 
-    # Crear el título dinámico con el rango de fechas
+    # Create dynamic title with date range
     title = f"Semana del {week_start.strftime('%d/%m/%Y')} al {week_end.strftime('%d/%m/%Y')}"
 
-    # Agrupar por día de la semana
+    # Group by day of the week
     daily_data = dataframe.groupby("day_name")[["sales", "profit"]].sum().reset_index()
 
-    # Traducir las columnas
+    # Translate the columns
     daily_data = daily_data.rename(columns={"sales": "Ventas", "profit": "Ganancias"})
 
-    # Dividir valores en miles para simplificar
+    # Divide values ​​into thousands for simplicity
     daily_data["Ventas"] /= 1000
     daily_data["Ganancias"] /= 1000
 
-    # Transformar datos al formato largo (long format)
+    # Transform data to long format
     long_format = daily_data.melt(
         id_vars=["day_name"], var_name="tipo", value_name="monto"
     )
 
-    # Crear el gráfico
+    # Create the chart
     chart = (
         alt.Chart(long_format)
         .mark_bar()
@@ -977,7 +977,7 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
         )
         .properties(
             title=alt.TitleParams(
-                text=title,  # Título dinámico
+                text=title,  # dynamic title
                 fontSize=16,
                 anchor="start",
             ),
@@ -996,11 +996,11 @@ def generate_donut_chart(
     is_graphing_amounts=True,
 ):
     """
-    Genera una gráfica de dona con Altair para el top.
-    Incluye formato manual para el símbolo de pesos y porcentaje.
+    Generate a donut graph with Altair for the top.
+    Includes manual formatting for the weight and percentage symbol.
 
     Args:
-        dataframe (pd.DataFrame): DataFrame con las columnas 'name' y 'total_sales'.
+        dataframe (pd.DataFrame): DataFrame with columns 'name' and 'total_sales'.
         name_title str: title for the element name of the top.
         tooltip_name_title str: title for the tooltip of element name of the top.
         column_total_amount str: name of the amouunt field
@@ -1020,7 +1020,7 @@ def generate_donut_chart(
         st.error(f"La columna '{column_total_amount}' debe contener valores numéricos.")
         return
 
-    # Calcular el porcentaje
+    # Calculate the percentage
     dataframe = dataframe.copy()
     total_sales_sum = dataframe[column_total_amount].sum()
     if total_sales_sum == 0:
@@ -1029,7 +1029,7 @@ def generate_donut_chart(
 
     dataframe["percentage"] = (dataframe[column_total_amount] / total_sales_sum) * 100
 
-    # Formatear valores para el tooltip
+    # Format values ​​for the tooltip
     if is_graphing_amounts:
         dataframe["formatted_sales"] = dataframe[column_total_amount].apply(
             lambda x: f"${x:,.2f}"
@@ -1043,7 +1043,7 @@ def generate_donut_chart(
         lambda x: f"{x:.1f}%"
     )
 
-    # Crear la gráfica de dona
+    # Create the donut graph
     chart = (
         alt.Chart(dataframe)
         .mark_arc(innerRadius=50, outerRadius=100)
@@ -1061,7 +1061,7 @@ def generate_donut_chart(
         .properties(width=400, height=400, title=f"Top de {name_title} (Dona)")
     )
 
-    # Renderizar la gráfica en Streamlit
+    # Render the graph in Streamlit
     st.altair_chart(chart, use_container_width=True)
 
 
@@ -1074,30 +1074,30 @@ def create_table(
     title_two: str = "Ganancia",
 ):
     """
-    Crea una tabla interactiva con filtros y encabezados personalizados.
+    Create an interactive table with custom filters and headers.
 
     Args:
-        dataframe (pd.DataFrame): El DataFrame con los datos originales.
-        column_map (dict): Diccionario que mapea los nombres originales de las columnas a nombres personalizados.
-        column_amount_one (str): Nombre de la columna de ventas o compras.
-        column_amount_two (str): Nombre de la columna de ganancias o gastos.
-        title_one (str): Título para la columna de ventas o compras.
-        title_two (str): Título para la columna de ganancias o gastos.
+        dataframe (pd.DataFrame): DataFrame with original data.
+        column_map (dict): Dictionary that maps original column names to custom names.
+        column_amount_one (str): Name of the sales or purchases column.
+        column_amount_two (str): Name of the profit or expense column.
+        title_one (str): Title for the sales or purchases column.
+        title_two (str): Title for the profit or expense column.
     """
 
-    # Dividir montos entre 1000 y agregar "K" al formato
+    # Divide amounts by 1000 and add "K" to the format
     dataframe[column_amount_one] = dataframe[column_amount_one] / 1000
     dataframe[column_amount_two] = dataframe[column_amount_two] / 1000
 
-    # Seleccionar las columnas del diccionario y renombrar para visualización
+    # Select dictionary columns and rename for display
     displayed_df = dataframe[list(column_map.keys())]
     displayed_df.columns = [column_map[col] for col in displayed_df.columns]
 
-    # Mostrar el indice desde 1
+    # Show index from 1
     displayed_df = displayed_df.reset_index(drop=True)
     displayed_df.index = displayed_df.index + 1
 
-    # Mostrar la tabla con estilos
+    # Show table with styles
     st.dataframe(
         displayed_df.style.set_table_styles(
             [
@@ -1115,7 +1115,7 @@ def create_table(
                 title_one: "${:,.2f}K",
                 title_two: "${:,.2f}K",
                 "Cantidad": "{:,.1f}",
-            }  # Formato para columnas específicas
+            }  # Format for specific columns
         ),
         use_container_width=True,
     )

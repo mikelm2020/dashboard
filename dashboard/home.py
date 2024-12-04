@@ -221,7 +221,7 @@ style_metric_cards("#00")
 
 # Graphs
 
-# Obtener el año actual y el mes actual
+# Get current year and current month
 current_year = year
 current_month = month if month is not None else 12
 
@@ -232,17 +232,17 @@ gross_profit_array_filtered = data["gross_profit_margin_array"][
     ["month_concept", "year_concept", "total_gpm"]
 ]
 
-# Agrupar y sumar las ventas
+# Group and add sales
 sales_grouped = sales_array_filtered.groupby(
     ["year_concept", "month_concept"], as_index=False
 ).agg({"total_sales": "sum"})
 
-# Agrupar y sumar las ganancias
+# Group and add profits
 profits_grouped = gross_profit_array_filtered.groupby(
     ["year_concept", "month_concept"], as_index=False
 ).agg({"total_gpm": "sum"})
 
-# 3. Filtrar por el año actual y meses hasta el mes actual
+# Filter by current year and months to current month
 sales_filtered = sales_grouped[
     (sales_grouped["year_concept"] == current_year)
     & (sales_grouped["month_concept"] <= current_month)
@@ -253,7 +253,7 @@ profits_filtered = profits_grouped[
     & (profits_grouped["month_concept"] <= current_month)
 ]
 
-# Combinar los DataFrames en uno solo
+# Combine DataFrames into one
 combined_df = pd.merge(
     sales_filtered,
     profits_filtered,
@@ -267,21 +267,21 @@ data["sales_vs_profits_array"]["movement_date"] = pd.to_datetime(
 )
 data["sales_vs_profits_array"] = data["sales_vs_profits_array"].dropna(
     subset=["movement_date"]
-)  # Elimina filas con fechas inválidas
+)  # Remove rows with invalid dates
 
 chart = utilities.create_weekly_stacked_chart(data["sales_vs_profits_array"])
 
 with st.container():
     col1, col2 = st.columns([2, 1])
     with col1:
-        # Llamar a la función de graficado con el DataFrame combinado
+        # Call the graph function with the combined DataFrame
         utilities.plot_sales_vs_profits(combined_df)
     with col2:
-        # Llamar a la función y mostrar el gráfico
-        if isinstance(chart, str):  # Si la función devolvió un mensaje
-            st.warning(chart)  # Muestra el mensaje como advertencia
+        # Call the function and display the graph
+        if isinstance(chart, str):  # If the function returned a message
+            st.warning(chart)  # Displays the message as a warning
         else:
-            st.altair_chart(chart, use_container_width=True)  # Renderiza el gráfico
+            st.altair_chart(chart, use_container_width=True)  # Render the graph
 
 with st.container():
     top_clients_filtered = data["sales_array_filtered"][["name", "total_sales"]]

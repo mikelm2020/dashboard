@@ -88,10 +88,10 @@ if st.session_state["authentication_status"]:
             ],
         }
 
-        # Contenedor exclusivo para el menú de navegación
+        # Exclusive container for the navigation menu
         menu_container = st.container()
         with menu_container:
-            # Crear el menú de navegación
+            # Create the navigation menu
             pg = st.navigation(pages)
             pg.run()
 

@@ -39,7 +39,7 @@ data = utilities.get_data(database_number, year, month)
 with st.container():
     st.markdown("<hr>", unsafe_allow_html=True)
 
-# Obtener el año actual y el mes actual
+# Get current year and current month
 current_year = year
 current_month = month if month is not None else 12
 
