@@ -269,9 +269,7 @@ data["sales_vs_profits_array"] = data["sales_vs_profits_array"].dropna(
     subset=["movement_date"]
 )  # Elimina filas con fechas inválidas
 
-chart = utilities.create_weekly_stacked_chart(
-    data["sales_vs_profits_array"], filter_current_week=True
-)
+chart = utilities.create_weekly_stacked_chart(data["sales_vs_profits_array"])
 
 with st.container():
     col1, col2 = st.columns([2, 1])
@@ -280,7 +278,10 @@ with st.container():
         utilities.plot_sales_vs_profits(combined_df)
     with col2:
         # Llamar a la función y mostrar el gráfico
-        st.altair_chart(chart, use_container_width=True)
+        if isinstance(chart, str):  # Si la función devolvió un mensaje
+            st.warning(chart)  # Muestra el mensaje como advertencia
+        else:
+            st.altair_chart(chart, use_container_width=True)  # Renderiza el gráfico
 
 with st.container():
     top_clients_filtered = data["sales_array_filtered"][["name", "total_sales"]]

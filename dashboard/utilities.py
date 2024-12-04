@@ -654,6 +654,68 @@ def get_data(database_number: int, year: int, month: int = None):
         st.warning("No hay datos de ventas disponibles")
         has_sales_profits_by_clients = False
 
+    # Gets all sales, profits and qty by towns in the system
+    sales_profits_by_towns_array = fetch_dashboard_data(
+        "sales-and-profits-by-towns", database_number
+    )
+
+    if not sales_profits_by_towns_array.empty:
+        has_sales_profits_by_towns = True
+        if month is None:
+            title_header_sales_profits_by_towns = f"Ventas del año {year}"
+            # Filters rows where the year matches
+            sales_profits_by_towns_array_filtered = sales_profits_by_towns_array[
+                sales_profits_by_towns_array["year_concept"] == year
+            ]
+            total_sales_profits_by_towns = sales_profits_by_towns_array_filtered[
+                "sales"
+            ].sum()
+        else:
+            title_header_sales_profits_by_towns = f"Ventas del mes del año {year}"
+            # Filters rows where the month and year match
+            sales_profits_by_towns_array_filtered = sales_profits_by_towns_array[
+                (sales_profits_by_towns_array["month_concept"] == month)
+                & (sales_profits_by_towns_array["year_concept"] == year)
+            ]
+            total_sales_profits_by_towns = sales_profits_by_towns_array_filtered[
+                "sales"
+            ].sum()
+
+    else:  # If there is no data, display a warning message
+        st.warning("No hay datos de ventas disponibles")
+        has_sales_profits_by_towns = False
+
+    # Gets all sales, profits and qty by sellers in the system
+    sales_profits_by_sellers_array = fetch_dashboard_data(
+        "sales-and-profits-by-sellers", database_number
+    )
+
+    if not sales_profits_by_sellers_array.empty:
+        has_sales_profits_by_sellers = True
+        if month is None:
+            title_header_sales_profits_by_sellers = f"Ventas del año {year}"
+            # Filters rows where the year matches
+            sales_profits_by_sellers_array_filtered = sales_profits_by_sellers_array[
+                sales_profits_by_sellers_array["year_concept"] == year
+            ]
+            total_sales_profits_by_sellers = sales_profits_by_sellers_array_filtered[
+                "sales"
+            ].sum()
+        else:
+            title_header_sales_profits_by_sellers = f"Ventas del mes del año {year}"
+            # Filters rows where the month and year match
+            sales_profits_by_sellers_array_filtered = sales_profits_by_sellers_array[
+                (sales_profits_by_sellers_array["month_concept"] == month)
+                & (sales_profits_by_sellers_array["year_concept"] == year)
+            ]
+            total_sales_profits_by_sellers = sales_profits_by_sellers_array_filtered[
+                "sales"
+            ].sum()
+
+    else:  # If there is no data, display a warning message
+        st.warning("No hay datos de ventas disponibles")
+        has_sales_profits_by_sellers = False
+
     # Return the data as a dictionary
     return {
         "has_sales": has_sales,
@@ -720,6 +782,16 @@ def get_data(database_number: int, year: int, month: int = None):
         "total_sales_profits_by_clients": total_sales_profits_by_clients,
         "sales_profits_by_clients_array": sales_profits_by_clients_array,
         "sales_profits_by_clients_array_filtered": sales_profits_by_clients_array_filtered,
+        "has_sales_profits_by_towns": has_sales_profits_by_towns,
+        "title_header_sales_profits_by_towns": title_header_sales_profits_by_towns,
+        "total_sales_profits_by_towns": total_sales_profits_by_towns,
+        "sales_profits_by_towns_array": sales_profits_by_towns_array,
+        "sales_profits_by_towns_array_filtered": sales_profits_by_towns_array_filtered,
+        "has_sales_profits_by_sellers": has_sales_profits_by_sellers,
+        "title_header_sales_profits_by_sellers": title_header_sales_profits_by_sellers,
+        "total_sales_profits_by_sellers": total_sales_profits_by_sellers,
+        "sales_profits_by_sellers_array": sales_profits_by_sellers_array,
+        "sales_profits_by_sellers_array_filtered": sales_profits_by_sellers_array_filtered,
     }
 
 
@@ -809,7 +881,7 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
         filter_current_week (bool): Si es True, filtra para mostrar solo la semana actual.
 
     Returns:
-        alt.Chart: Gráfico de Altair.
+        alt.Chart or str: Gráfico de Altair o mensaje si no hay datos disponibles.
     """
     # Asegurar que movement_date es datetime
     if not pd.api.types.is_datetime64_any_dtype(dataframe["movement_date"]):
@@ -823,17 +895,24 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
             "La columna 'movement_date' contiene valores no válidos para fechas."
         )
 
-    # Obtener la fecha actual y el número de semana actual
+    # Obtener la fecha actual, número de semana y año actual
     today = pd.Timestamp.now()
     current_week = today.isocalendar().week
+    current_year = today.isocalendar().year
 
     # Agregar columna con el nombre del día de la semana
     dataframe["day_name"] = dataframe["movement_date"].dt.day_name(locale="es_ES")
 
-    # Filtrar la semana en curso si se requiere
+    # Filtrar por semana y año actual si se requiere
     if filter_current_week:
         dataframe["week"] = dataframe["movement_date"].dt.isocalendar().week
-        dataframe = dataframe[dataframe["week"] == current_week]
+        dataframe["year"] = dataframe["movement_date"].dt.isocalendar().year
+
+        # Filtrar por año actual y semana actual
+        dataframe = dataframe[
+            (dataframe["week"] == current_week) & (dataframe["year"] == current_year)
+        ]
+
         # Calcular el rango de fechas de la semana actual
         week_start = today - pd.Timedelta(days=today.weekday())
         week_end = week_start + pd.Timedelta(days=6)
@@ -844,7 +923,8 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
 
     # Verificar si hay datos en el rango seleccionado
     if dataframe.empty:
-        raise ValueError("No hay datos disponibles para el rango seleccionado.")
+        # Retornar un mensaje o un gráfico vacío
+        return "No hay datos disponibles para el rango seleccionado."
 
     # Crear el título dinámico con el rango de fechas
     title = f"Semana del {week_start.strftime('%d/%m/%Y')} al {week_end.strftime('%d/%m/%Y')}"
@@ -985,18 +1065,29 @@ def generate_donut_chart(
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_table(dataframe, column_map):
+def create_table(
+    dataframe,
+    column_map,
+    column_amount_one: str = "sales",
+    column_amount_two: str = "profit",
+    title_one: str = "Venta",
+    title_two: str = "Ganancia",
+):
     """
     Crea una tabla interactiva con filtros y encabezados personalizados.
 
     Args:
         dataframe (pd.DataFrame): El DataFrame con los datos originales.
         column_map (dict): Diccionario que mapea los nombres originales de las columnas a nombres personalizados.
+        column_amount_one (str): Nombre de la columna de ventas o compras.
+        column_amount_two (str): Nombre de la columna de ganancias o gastos.
+        title_one (str): Título para la columna de ventas o compras.
+        title_two (str): Título para la columna de ganancias o gastos.
     """
 
     # Dividir montos entre 1000 y agregar "K" al formato
-    dataframe["sales"] = dataframe["sales"] / 1000
-    dataframe["profit"] = dataframe["profit"] / 1000
+    dataframe[column_amount_one] = dataframe[column_amount_one] / 1000
+    dataframe[column_amount_two] = dataframe[column_amount_two] / 1000
 
     # Seleccionar las columnas del diccionario y renombrar para visualización
     displayed_df = dataframe[list(column_map.keys())]
@@ -1021,8 +1112,8 @@ def create_table(dataframe, column_map):
             ]
         ).format(
             {
-                "Venta": "${:,.2f}K",
-                "Ganancia": "${:,.2f}K",
+                title_one: "${:,.2f}K",
+                title_two: "${:,.2f}K",
                 "Cantidad": "{:,.1f}",
             }  # Formato para columnas específicas
         ),

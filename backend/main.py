@@ -512,13 +512,13 @@ def get_sales_by_town(db_number: int = 1):
 
     invoices_table, clients_table = get_table_name(db_number, "FACTF", "CLIE")
     query = f"""
-    SELECT  upper(b.MUNICIPIO) AS name, 
-    {month_instruction[0]} AS month_concept, 
-    {year_instruction[0]} AS year_concept,  
-    SUM(a.CAN_TOT) AS total_sales 
-    FROM {invoices_table} AS a INNER JOIN {clients_table} AS b 
-    ON a.CVE_CLPV = b.CLAVE 
-    WHERE (a.STATUS = 'E') 
+    SELECT  upper(b.MUNICIPIO) AS name,
+    {month_instruction[0]} AS month_concept,
+    {year_instruction[0]} AS year_concept,
+    SUM(a.CAN_TOT) AS total_sales
+    FROM {invoices_table} AS a INNER JOIN {clients_table} AS b
+    ON a.CVE_CLPV = b.CLAVE
+    WHERE (a.STATUS = 'E')
     AND (b.MUNICIPIO IS NOT NULL AND b.MUNICIPIO <> '')
     """
 
@@ -730,6 +730,151 @@ def get_sales_by_client(db_number: int = 1):
     """
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "name": row[0],
+                "month_concept": row[1],
+                "year_concept": row[2],
+                "sales": row[3],
+                "profit": row[4],
+                "qty": row[5],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for SalesByTown vector for obtain sales and profit by towns
+@app.get("/sales-and-profits-by-towns/", response_model=List[SalesByClientVector])
+def get_sales_and_profits_by_town(db_number: int = 1):
+    """
+    Endpoint to get sales, profit and towns quantity by town data from the database.
+
+    Returns a list of SalesByClientVector objects containing the name of the town,
+    the month and year of the sale, the sales amount,
+    the profit amount and qty for towns with this town.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+
+    invoice_table, clients_table, part_table = get_table_name(
+        db_number, "FACTF", "CLIE", "PAR_FACTF"
+    )
+    query = f"""
+    SELECT upper(b.MUNICIPIO) AS name,
+    {month_instruction[0]} AS month_concept, 
+    {year_instruction[0]} AS year_concept,
+    SUM((c.CANT*c.PREC)) as sales, 
+    SUM((c.CANT*c.PREC)-(c.CANT*c.COST)) as profit, 
+    COUNT(b.CLAVE) AS qty
+    FROM {invoice_table} a, {clients_table} b, {part_table} c
+    WHERE a.CVE_CLPV=b.CLAVE
+    AND a.CVE_DOC=c.CVE_DOC
+    AND a.STATUS = 'E'
+    AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
+    AND (b.MUNICIPIO IS NOT NULL AND b.MUNICIPIO <> '')
+    """
+
+    final_query = (
+        f" GROUP BY upper(b.MUNICIPIO), {month_instruction[0]}, {year_instruction[0]}"
+    )
+
+    query += final_query
+
+    conn = get_db_connection(db_number)
+    cursor = (
+        conn.cursor(as_dict=True) if os.getenv("DBMS") == "SQLSERVER" else conn.cursor()
+    )
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if os.getenv("DBMS") == "SQLSERVER":
+        return results
+    else:
+        # We convert each tuple to a dictionary
+        formatted_results = [
+            {
+                "name": row[0],
+                "month_concept": row[1],
+                "year_concept": row[2],
+                "sales": row[3],
+                "profit": row[4],
+                "qty": row[5],
+            }
+            for row in results
+        ]
+        return formatted_results
+
+
+# Endpoint for SalesByTown vector for obtain sales and profit by towns
+@app.get("/sales-and-profits-by-sellers/", response_model=List[SalesByClientVector])
+def get_sales_and_profits_by_seller(db_number: int = 1):
+    """
+    Endpoint to get sales, profit and sellers quantity by seller data from the database.
+
+    Returns a list of SalesByClientVector objects containing the name of the seller,
+    the month and year of the sale, the sales amount,
+    the profit amount and qty for sellers with this seller.
+
+    The query is constructed using the instructions for the current database manager system (DBMS).
+
+    If the DBMS is SQLSERVER, the results are returned as a list of dictionaries.
+
+    If the DBMS is FIREBIRD, the results are returned as a list of tuples,
+    which are then converted to a list of dictionaries.
+    """
+
+    final_query = ""
+
+    invoice_table, sellers_table, part_table = get_table_name(
+        db_number, "FACTF", "VEND", "PAR_FACTF"
+    )
+    query = f"""
+    SELECT upper(b.NOMBRE) AS name,
+    {month_instruction[0]} AS month_concept, 
+    {year_instruction[0]} AS year_concept,
+    SUM((c.CANT*c.PREC)) as sales, 
+    SUM((c.CANT*c.PREC)-(c.CANT*c.COST)) as profit, 
+    COUNT(b.CVE_VEND) AS qty
+    FROM {invoice_table} a, {sellers_table} b, {part_table} c
+    WHERE a.CVE_VEND=b.CVE_VEND
+    AND a.CVE_DOC=c.CVE_DOC
+    AND a.STATUS = 'E'
+    AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
+    """
+
+    final_query = (
+        f" GROUP BY upper(b.NOMBRE), {month_instruction[0]}, {year_instruction[0]}"
+    )
 
     query += final_query
 

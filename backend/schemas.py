@@ -75,3 +75,12 @@ class SalesByClientVector(BaseModel):
     sales: float
     profit: float
     qty: float
+
+
+class PurchasesByProviderVector(BaseModel):
+    name: str
+    month_concept: int
+    year_concept: int
+    purchases: float
+    spent: float
+    qty: float

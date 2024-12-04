@@ -111,3 +111,49 @@ column_map_clients = {
 st.header("Top de Clientes")
 with st.container():
     utilities.create_table(top_clients, column_map_clients)
+
+# Obtain the top towns table
+top_towns_filtered = data["sales_profits_by_towns_array_filtered"][
+    ["name", "sales", "profit", "qty"]
+]
+top_towns = utilities.get_top_multiple_agg(
+    data["sales_profits_by_towns_array_filtered"],
+    "name",
+    "sales",
+    "profit",
+    "qty",
+    number_of_entries,
+)
+column_map_towns = {
+    "name": "Municipio/Delegación",
+    "sales": "Venta",
+    "profit": "Ganancia",
+    "qty": "Cantidad",
+}
+
+st.header("Top de Municipios")
+with st.container():
+    utilities.create_table(top_towns, column_map_towns)
+
+# Obtain the top sellers table
+top_sellers_filtered = data["sales_profits_by_sellers_array_filtered"][
+    ["name", "sales", "profit", "qty"]
+]
+top_sellers = utilities.get_top_multiple_agg(
+    data["sales_profits_by_sellers_array_filtered"],
+    "name",
+    "sales",
+    "profit",
+    "qty",
+    number_of_entries,
+)
+column_map_sellers = {
+    "name": "Vendedor",
+    "sales": "Venta",
+    "profit": "Ganancia",
+    "qty": "Cantidad",
+}
+
+st.header("Top de Vendedores")
+with st.container():
+    utilities.create_table(top_sellers, column_map_sellers)
