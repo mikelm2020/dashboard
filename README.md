@@ -69,6 +69,7 @@
 ![Product Name Screen Shot](./assets/api.png)
 
 ### Dashboard Home
+![dash1](./assets/dash_0.png)
 ![Dashboard](./assets/dash_1.png)
 ![dash2](./assets/dash_2.png)
 ![dash3](./assets/dash_3.png)
@@ -105,19 +106,27 @@ In this project the objetives are:
 
 ### Prerequisites
 
-This project use a Firebird 2.51 local database and administrative system Aspel SAE 9.0.
+1. This project use a Firebird 2.51 local database and administrative system Aspel SAE 9.0.
+2. Have Aspel SAE 8.0 or 9.0 installed
+3. Have Windows 10 u 11 installed
+4. Have Python 3.11 o superior installed
+5. Have Git y Gitbash installed
 
 ### Installation
 
 1. Clone the repository
-   ```sh
+```sh
    git clone https://github.com/mikelm2020/dashboard.git
-   ```
+```
 2. Create the python virtual enviroment
+```sh
+   python -m venv .venv
+```
 3. Prepare the virtual enviroment through of local requirements file
-   ```sh
+```sh
+   source .venv/Scripts/activate
    pip install -r requirements.txt
-   ```
+```
 4. Create a .env file with enviroment variables in the root folder using environment variables
    of the .env_firebird_example file
 
