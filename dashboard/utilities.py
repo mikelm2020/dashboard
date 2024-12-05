@@ -75,7 +75,7 @@ def render_header(company_name, user_name, logo_base64):
 
 
 # Function to get data from the API
-@st.cache_data
+@st.cache_data(ttl=3600, show_spinner="Obteniendo datos de API")
 def fetch_dashboard_data(endpoint: str, db_number: int):
     """Fetches data from the dashboard API and returns it as a pandas DataFrame.
 
@@ -105,13 +105,17 @@ def calculate_delta(previous_value: float, last_value: float, divisor: int):
         float: The percentage difference between the two values, rounded to 2 decimal places.
     """
 
-    return round(
-        (
-            (round(last_value / divisor, 2) - round(previous_value / divisor, 2))
-            / round(previous_value / divisor, 2)
+    return (
+        round(
+            (
+                (round(last_value / divisor, 2) - round(previous_value / divisor, 2))
+                / round(previous_value / divisor, 2)
+            )
+            * 100,
+            2,
         )
-        * 100,
-        2,
+        if previous_value != 0
+        else 0
     )
 
 

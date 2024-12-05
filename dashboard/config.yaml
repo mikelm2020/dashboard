@@ -6,10 +6,10 @@ credentials:
   usernames:
     admin:
       email: admin@gmail.com
-      failed_login_attempts: 0
+      failed_login_attempts: 1
       first_name: Miguel Angel
       last_name: Lopez Monroy
-      logged_in: true
+      logged_in: false
       password: $2b$12$FH2pvtH8T.g5WWa2gzNu.O.DFQ3AA0bY.LTVn/2qKLsF2kmYhsuOy
       roles:
       - admin
