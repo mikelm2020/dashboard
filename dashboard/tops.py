@@ -44,11 +44,11 @@ current_year = year
 current_month = month if month is not None else 12
 
 # Obtain the top lines table
-top_lines_filtered = data["sales_by_lines_array_filtered"][
+top_lines_filtered = data["sales_by_lines"]["sales_by_lines_array_filtered"][
     ["name", "sales", "profit", "qty"]
 ]
 top_lines = utilities.get_top_multiple_agg(
-    data["sales_by_lines_array_filtered"],
+    data["sales_by_lines"]["sales_by_lines_array_filtered"],
     "name",
     "sales",
     "profit",
@@ -67,11 +67,11 @@ with st.container():
     utilities.create_table(top_lines, column_map)
 
 # Obtain the top products table
-top_products_filtered = data["sales_profits_by_products_array_filtered"][
+top_products_filtered = data["sales_by_products"]["sales_by_products_array_filtered"][
     ["name", "sales", "profit", "qty"]
 ]
 top_products = utilities.get_top_multiple_agg(
-    data["sales_profits_by_products_array_filtered"],
+    data["sales_by_products"]["sales_by_products_array_filtered"],
     "name",
     "sales",
     "profit",
@@ -90,11 +90,11 @@ with st.container():
     utilities.create_table(top_products, column_map_products)
 
 # Obtain the top clients table
-top_clients_filtered = data["sales_profits_by_clients_array_filtered"][
+top_clients_filtered = data["sales_by_clients"]["sales_by_clients_array_filtered"][
     ["name", "sales", "profit", "qty"]
 ]
 top_clients = utilities.get_top_multiple_agg(
-    data["sales_profits_by_clients_array_filtered"],
+    data["sales_by_clients"]["sales_by_clients_array_filtered"],
     "name",
     "sales",
     "profit",
@@ -113,11 +113,11 @@ with st.container():
     utilities.create_table(top_clients, column_map_clients)
 
 # Obtain the top towns table
-top_towns_filtered = data["sales_profits_by_towns_array_filtered"][
-    ["name", "sales", "profit", "qty"]
-]
+top_towns_filtered = data["sales_and_profits_by_towns"][
+    "sales_and_profits_by_towns_array_filtered"
+][["name", "sales", "profit", "qty"]]
 top_towns = utilities.get_top_multiple_agg(
-    data["sales_profits_by_towns_array_filtered"],
+    data["sales_and_profits_by_towns"]["sales_and_profits_by_towns_array_filtered"],
     "name",
     "sales",
     "profit",
@@ -136,11 +136,11 @@ with st.container():
     utilities.create_table(top_towns, column_map_towns)
 
 # Obtain the top sellers table
-top_sellers_filtered = data["sales_profits_by_sellers_array_filtered"][
-    ["name", "sales", "profit", "qty"]
-]
+top_sellers_filtered = data["sales_and_profits_by_sellers"][
+    "sales_and_profits_by_sellers_array_filtered"
+][["name", "sales", "profit", "qty"]]
 top_sellers = utilities.get_top_multiple_agg(
-    data["sales_profits_by_sellers_array_filtered"],
+    data["sales_and_profits_by_sellers"]["sales_and_profits_by_sellers_array_filtered"],
     "name",
     "sales",
     "profit",

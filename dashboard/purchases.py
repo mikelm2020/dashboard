@@ -44,85 +44,85 @@ with st.container():
 with st.container():
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        if data["has_purchases"]:
+        if data["purchases"]["has_data"]:
             delta_average_purchases = None
             purchases_array_filtered_previous = None
 
             delta_purchases = utilities.get_delta(
                 month,
                 year,
-                data["purchases_array"],
+                data["purchases"]["purchases_array"],
                 "total_purchases",
-                data["average_purchases"],
+                data["purchases"]["average"],
                 1000,
                 "mean",
             )
             utilities.get_metric(
                 ":material/shopping_cart: Compras Promedio",
-                data["average_purchases"],
+                data["purchases"]["average"],
                 "K",
                 delta_average_purchases,
                 1000,
             )
     with col2:
-        if data["has_purchases"]:
+        if data["purchases"]["has_data"]:
             delta_median_purchases = None
             purchases_array_filtered_previous = None
 
             delta_purchases = utilities.get_delta(
                 month,
                 year,
-                data["purchases_array"],
+                data["purchases"]["purchases_array"],
                 "total_purchases",
-                data["median_purchases"],
+                data["purchases"]["median"],
                 1000,
                 "median",
             )
             utilities.get_metric(
                 ":material/shopping_cart: Mediana Compras",
-                data["median_purchases"],
+                data["purchases"]["median"],
                 "K",
                 delta_median_purchases,
                 1000,
             )
     with col3:
-        if data["has_purchases"]:
+        if data["purchases"]["has_data"]:
             delta_max_purchases = None
             purchases_array_filtered_previous = None
 
             delta_purchases = utilities.get_delta(
                 month,
                 year,
-                data["purchases_array"],
+                data["purchases"]["purchases_array"],
                 "total_purchases",
-                data["max_purchases"],
+                data["purchases"]["max"],
                 1000,
                 "max",
             )
             utilities.get_metric(
                 ":material/shopping_cart: Maxima Compra",
-                data["max_purchases"],
+                data["purchases"]["max"],
                 "K",
                 delta_max_purchases,
                 1000,
             )
     with col4:
-        if data["has_purchases"]:
+        if data["purchases"]["has_data"]:
             delta_min_purchases = None
             purchases_array_filtered_previous = None
 
             delta_purchases = utilities.get_delta(
                 month,
                 year,
-                data["purchases_array"],
+                data["purchases"]["purchases_array"],
                 "total_purchases",
-                data["min_purchases"],
+                data["purchases"]["min"],
                 1000,
                 "min",
             )
             utilities.get_metric(
                 ":material/shopping_cart: Minima Compra",
-                data["min_purchases"],
+                data["purchases"]["min"],
                 "K",
                 delta_min_purchases,
                 1000,

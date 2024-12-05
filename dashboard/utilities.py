@@ -21,7 +21,7 @@ number_of_entries = int(os.getenv("TOP_N"))
 
 
 # Convert local image to base64
-def image_to_base64(image_path):
+def image_to_base64(image_path: str) -> str:
     """
     Reads an image file and converts it to a base64 encoded string.
 
@@ -36,7 +36,7 @@ def image_to_base64(image_path):
         return base64.b64encode(img_file.read()).decode("utf-8")
 
 
-def render_header(company_name, user_name, logo_base64):
+def render_header(company_name: str, user_name: str, logo_base64: str):
     """
     Renders a header at the top of the page with the company name and the user name.
 
@@ -76,7 +76,7 @@ def render_header(company_name, user_name, logo_base64):
 
 # Function to get data from the API
 @st.cache_data(ttl=3600, show_spinner="Obteniendo datos de API")
-def fetch_dashboard_data(endpoint: str, db_number: int):
+def fetch_dashboard_data(endpoint: str, db_number: int) -> pd.DataFrame:
     """Fetches data from the dashboard API and returns it as a pandas DataFrame.
 
     Args:
@@ -92,7 +92,7 @@ def fetch_dashboard_data(endpoint: str, db_number: int):
     return pd.DataFrame(data)  # Convert the data list into a DataFrame
 
 
-def calculate_delta(previous_value: float, last_value: float, divisor: int):
+def calculate_delta(previous_value: float, last_value: float, divisor: int) -> float:
     """
     Calculates the percentage difference between two values.
 
@@ -127,7 +127,7 @@ def get_delta(
     last_value: float,
     divisor: int,
     delta_type: str,
-):
+) -> float:
     """
     Calculates the percentage difference between two values, given a divisor and a type of calculation.
 
@@ -228,7 +228,7 @@ def get_metric(
 
 def get_top(
     filtered_df: pd.DataFrame, group_column: str, mount_column: str, top_n: int
-):
+) -> pd.DataFrame:
     """
     Filters the top N entries from a DataFrame based on a specified column.
 
@@ -258,7 +258,7 @@ def get_top_multiple_agg(
     aggregate_column_one: str,
     aggregate_column_two: str,
     top_n: int,
-):
+) -> pd.DataFrame:
     """
     Filters the top N entries from a DataFrame based on a specified column and 2 aggregates more.
 
@@ -359,447 +359,169 @@ def get_circular_graph(df: pd.DataFrame, mount_column: str, subject_column: str)
     st.pyplot(fig)
 
 
-def get_data(database_number: int, year: int, month: int = None):
-    # Gets all sales in the system
-    sales_array = fetch_dashboard_data("sales", database_number)
+def replace_hyphens_with_underscores(text: str) -> str:
+    """
+    Replaces all hyphens ('-') in a string with underscores ('_').
 
-    if not sales_array.empty:
-        has_sales = True
-        if month is None:
-            title_header_sales = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_array_filtered = sales_array[sales_array["year_concept"] == year]
-            total_sales = sales_array_filtered["total_sales"].sum()
-            average_sales = sales_array_filtered["total_sales"].mean()
-            median_sales = sales_array_filtered["total_sales"].median()
-            max_sales = sales_array_filtered["total_sales"].max()
-            min_sales = sales_array_filtered["total_sales"].min()
-            number_of_sales = sales_array_filtered["total_sales"].count()
-            number_of_clients = sales_array_filtered["name"].nunique()
-        else:
-            title_header_sales = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_array_filtered = sales_array[
-                (sales_array["month_concept"] == month)
-                & (sales_array["year_concept"] == year)
-            ]
-            total_sales = sales_array_filtered["total_sales"].sum()
-            average_sales = sales_array_filtered["total_sales"].mean()
-            median_sales = sales_array_filtered["total_sales"].median()
-            max_sales = sales_array_filtered["total_sales"].max()
-            min_sales = sales_array_filtered["total_sales"].min()
-            number_of_sales = sales_array_filtered["total_sales"].count()
-            number_of_clients = sales_array_filtered["name"].nunique()
+    Args:
+        text (str): The input string.
 
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales = False
+    Returns:
+        str: The modified string with hyphens replaced by underscores.
+    """
+    return text.replace("-", "_")
 
-    # Gets all system purchases
-    purchases_array = fetch_dashboard_data("purchases", database_number)
-    if not purchases_array.empty:
-        has_purchases = True
-        if month is None:
-            title_header_purchases = f"Compras del año {year}"
-            # Filters rows where the year matches
-            purchases_array_filtered = purchases_array[
-                purchases_array["year_concept"] == year
-            ]
-            total_purchases = purchases_array_filtered["total_purchases"].sum()
-            average_purchases = purchases_array_filtered["total_purchases"].mean()
-            median_purchases = purchases_array_filtered["total_purchases"].median()
-            max_purchases = purchases_array_filtered["total_purchases"].max()
-            min_purchases = purchases_array_filtered["total_purchases"].min()
-            number_of_purchases = purchases_array_filtered["total_purchases"].count()
-            number_of_providers = purchases_array_filtered["name"].nunique()
 
-        else:
-            title_header_purchases = f"Compras del mes del año {year}"
-            # Filters rows where the month and year match
-            purchases_array_filtered = purchases_array[
-                (purchases_array["month_concept"] == month)
-                & (purchases_array["year_concept"] == year)
-            ]
-            total_purchases = purchases_array_filtered["total_purchases"].sum()
-            average_purchases = purchases_array_filtered["total_purchases"].mean()
-            median_purchases = purchases_array_filtered["total_purchases"].median()
-            max_purchases = purchases_array_filtered["total_purchases"].max()
-            min_purchases = purchases_array_filtered["total_purchases"].min()
-            number_of_purchases = purchases_array_filtered["total_purchases"].count()
-            number_of_providers = purchases_array_filtered["name"].nunique()
+def calculate_metrics(data: pd.DataFrame, column: str) -> dict:
+    """
+    Calculates key metrics for a given column in the DataFrame.
 
-    else:  # If there is no data, display a warning message
-        has_purchases = False
-        st.warning("No hay datos de compras disponibles")
+    Args:
+        data (pd.DataFrame): The DataFrame containing the data.
+        column (str): The name of the column to calculate metrics for.
 
-    # Gets all sales per salesperson in the system
-    sales_by_seller_array = fetch_dashboard_data("sellers", database_number)
-    if not sales_by_seller_array.empty:
-        has_sellers = True
-        if month is None:
-            title_header_seller = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_by_seller_array_filtered = sales_by_seller_array[
-                sales_by_seller_array["year_concept"] == year
-            ]
-            total_sales_by_seller = sales_by_seller_array_filtered["total_sales"].sum()
-            number_of_sellers = sales_by_seller_array_filtered["name"].nunique()
-
-        else:
-            title_header_seller = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_by_seller_array_filtered = sales_by_seller_array[
-                (sales_by_seller_array["month_concept"] == month)
-                & (sales_by_seller_array["year_concept"] == year)
-            ]
-            total_sales_by_seller = sales_by_seller_array_filtered["total_sales"].sum()
-            number_of_sellers = sales_by_seller_array_filtered["name"].nunique()
-
-    else:  # If there is no data, display a warning message
-        has_sellers = False
-        st.warning("No hay datos de ventas por vendedor disponibles")
-
-    # Gets all sales by product in the system
-    sales_by_product_array = fetch_dashboard_data("products", database_number)
-    if not sales_by_product_array.empty:
-        has_products = True
-        if month is None:
-            title_header_products = f"Volumen de Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_by_product_array_filtered = sales_by_product_array[
-                sales_by_product_array["year_concept"] == year
-            ]
-            total_qty_by_product = sales_by_product_array_filtered["total_qty"].sum()
-        else:
-            title_header_products = f"Volumen de Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_by_product_array_filtered = sales_by_product_array[
-                (sales_by_product_array["month_concept"] == month)
-                & (sales_by_product_array["year_concept"] == year)
-            ]
-            total_qty_by_product = sales_by_product_array_filtered["total_qty"].sum()
-
-    else:  # If there is no data, display a warning message
-        has_products = False
-        st.warning("No hay datos de ventas por producto disponibles")
-
-    # Get the gross profit margin
-    gross_profit_margin_array = fetch_dashboard_data(
-        "gross-profit-margin", database_number
-    )
-    if not gross_profit_margin_array.empty:
-        has_profit_margin = True
-        if month is None:
-            title_header_gpm = f"Margen de Ganancia Bruta del año {year}"
-            # Filters rows where the year matches
-            gross_profit_margin_array_filtered = gross_profit_margin_array[
-                gross_profit_margin_array["year_concept"] == year
-            ]
-            total_gpm = gross_profit_margin_array_filtered["total_gpm"].sum()
-        else:
-            title_header_gpm = f"Volumen de Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            gross_profit_margin_array_filtered = gross_profit_margin_array[
-                (gross_profit_margin_array["month_concept"] == month)
-                & (gross_profit_margin_array["year_concept"] == year)
-            ]
-            total_gpm = gross_profit_margin_array_filtered["total_gpm"].sum()
-
-    else:  # If there is no data, display a warning message
-        has_profit_margin = False
-        st.warning("No hay datos para calcular el margen de ganancia bruta disponibles")
-
-    # Gets all purchases by product in the system
-    purchases_by_product_array = fetch_dashboard_data("goods", database_number)
-    if not purchases_by_product_array.empty:
-        has_goods = True
-        if month is None:
-            title_header_goods = f"Volumen de Compras del año {year}"
-            # Filters rows where the year matches
-            purchases_by_product_array_filtered = purchases_by_product_array[
-                purchases_by_product_array["year_concept"] == year
-            ]
-            total_purchases_qty_by_product = purchases_by_product_array_filtered[
-                "total_qty"
-            ].sum()
-        else:
-            title_header_goods = f"Volumen de Compras del mes del año {year}"
-            # Filters rows where the month and year match
-            purchases_by_product_array_filtered = purchases_by_product_array[
-                (purchases_by_product_array["month_concept"] == month)
-                & (purchases_by_product_array["year_concept"] == year)
-            ]
-            total_purchases_qty_by_product = purchases_by_product_array_filtered[
-                "total_qty"
-            ].sum()
-
-    else:  # If there is no data, display a warning message
-        has_goods = False
-        st.warning("No hay datos de compras por producto disponibles")
-
-    # Gets all sales and profits in the system
-    sales_vs_profits_array = fetch_dashboard_data("sales-vs-profit", database_number)
-    if not sales_vs_profits_array.empty:
-        has_sales_vs_profits = True
-
-    else:  # If there is no data, display a warning message
-        has_sales_vs_profits = False
-        st.warning("No hay datos de ventas y ganancias disponibles")
-
-    # Gets all sales by towns in the system
-    sales_by_towns_array = fetch_dashboard_data("sales-by-towns", database_number)
-
-    if not sales_by_towns_array.empty:
-        has_sales_by_towns = True
-        if month is None:
-            title_header_sales_by_towns = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_by_towns_array_filtered = sales_by_towns_array[
-                sales_by_towns_array["year_concept"] == year
-            ]
-            total_sales_by_towns = sales_by_towns_array_filtered["total_sales"].sum()
-        else:
-            title_header_sales_by_towns = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_by_towns_array_filtered = sales_by_towns_array[
-                (sales_by_towns_array["month_concept"] == month)
-                & (sales_by_towns_array["year_concept"] == year)
-            ]
-            total_sales_by_towns = sales_by_towns_array_filtered["total_sales"].sum()
-
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales_by_towns = False
-
-    # Gets all sales by lines in the system
-    sales_by_lines_array = fetch_dashboard_data("sales-by-lines", database_number)
-
-    if not sales_by_lines_array.empty:
-        has_sales_by_lines = True
-        if month is None:
-            title_header_sales_by_lines = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_by_lines_array_filtered = sales_by_lines_array[
-                sales_by_lines_array["year_concept"] == year
-            ]
-            total_sales_by_lines = sales_by_lines_array_filtered["sales"].sum()
-        else:
-            title_header_sales_by_lines = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_by_lines_array_filtered = sales_by_lines_array[
-                (sales_by_lines_array["month_concept"] == month)
-                & (sales_by_lines_array["year_concept"] == year)
-            ]
-            total_sales_by_lines = sales_by_lines_array_filtered["sales"].sum()
-
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales_by_lines = False
-
-    # Gets all sales, profits and qty by products in the system
-    sales_profits_by_products_array = fetch_dashboard_data(
-        "sales-by-products", database_number
-    )
-
-    if not sales_profits_by_products_array.empty:
-        has_sales_profits_by_products = True
-        if month is None:
-            title_header_sales_profits_by_products = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_profits_by_products_array_filtered = sales_profits_by_products_array[
-                sales_profits_by_products_array["year_concept"] == year
-            ]
-            total_sales_profits_by_products = sales_profits_by_products_array_filtered[
-                "sales"
-            ].sum()
-        else:
-            title_header_sales_profits_by_products = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_profits_by_products_array_filtered = sales_profits_by_products_array[
-                (sales_profits_by_products_array["month_concept"] == month)
-                & (sales_profits_by_products_array["year_concept"] == year)
-            ]
-            total_sales_profits_by_products = sales_profits_by_products_array_filtered[
-                "sales"
-            ].sum()
-
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales_profits_by_products = False
-
-    # Gets all sales, profits and qty by clients in the system
-    sales_profits_by_clients_array = fetch_dashboard_data(
-        "sales-by-clients", database_number
-    )
-
-    if not sales_profits_by_clients_array.empty:
-        has_sales_profits_by_clients = True
-        if month is None:
-            title_header_sales_profits_by_clients = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_profits_by_clients_array_filtered = sales_profits_by_clients_array[
-                sales_profits_by_clients_array["year_concept"] == year
-            ]
-            total_sales_profits_by_clients = sales_profits_by_clients_array_filtered[
-                "sales"
-            ].sum()
-        else:
-            title_header_sales_profits_by_clients = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_profits_by_clients_array_filtered = sales_profits_by_clients_array[
-                (sales_profits_by_clients_array["month_concept"] == month)
-                & (sales_profits_by_clients_array["year_concept"] == year)
-            ]
-            total_sales_profits_by_clients = sales_profits_by_clients_array_filtered[
-                "sales"
-            ].sum()
-
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales_profits_by_clients = False
-
-    # Gets all sales, profits and qty by towns in the system
-    sales_profits_by_towns_array = fetch_dashboard_data(
-        "sales-and-profits-by-towns", database_number
-    )
-
-    if not sales_profits_by_towns_array.empty:
-        has_sales_profits_by_towns = True
-        if month is None:
-            title_header_sales_profits_by_towns = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_profits_by_towns_array_filtered = sales_profits_by_towns_array[
-                sales_profits_by_towns_array["year_concept"] == year
-            ]
-            total_sales_profits_by_towns = sales_profits_by_towns_array_filtered[
-                "sales"
-            ].sum()
-        else:
-            title_header_sales_profits_by_towns = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_profits_by_towns_array_filtered = sales_profits_by_towns_array[
-                (sales_profits_by_towns_array["month_concept"] == month)
-                & (sales_profits_by_towns_array["year_concept"] == year)
-            ]
-            total_sales_profits_by_towns = sales_profits_by_towns_array_filtered[
-                "sales"
-            ].sum()
-
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales_profits_by_towns = False
-
-    # Gets all sales, profits and qty by sellers in the system
-    sales_profits_by_sellers_array = fetch_dashboard_data(
-        "sales-and-profits-by-sellers", database_number
-    )
-
-    if not sales_profits_by_sellers_array.empty:
-        has_sales_profits_by_sellers = True
-        if month is None:
-            title_header_sales_profits_by_sellers = f"Ventas del año {year}"
-            # Filters rows where the year matches
-            sales_profits_by_sellers_array_filtered = sales_profits_by_sellers_array[
-                sales_profits_by_sellers_array["year_concept"] == year
-            ]
-            total_sales_profits_by_sellers = sales_profits_by_sellers_array_filtered[
-                "sales"
-            ].sum()
-        else:
-            title_header_sales_profits_by_sellers = f"Ventas del mes del año {year}"
-            # Filters rows where the month and year match
-            sales_profits_by_sellers_array_filtered = sales_profits_by_sellers_array[
-                (sales_profits_by_sellers_array["month_concept"] == month)
-                & (sales_profits_by_sellers_array["year_concept"] == year)
-            ]
-            total_sales_profits_by_sellers = sales_profits_by_sellers_array_filtered[
-                "sales"
-            ].sum()
-
-    else:  # If there is no data, display a warning message
-        st.warning("No hay datos de ventas disponibles")
-        has_sales_profits_by_sellers = False
-
-    # Return the data as a dictionary
+    Returns:
+        dict: A dictionary containing the calculated metrics.
+    """
     return {
-        "has_sales": has_sales,
-        "title_header_sales": title_header_sales,
-        "total_sales": total_sales,
-        "average_sales": average_sales,
-        "median_sales": median_sales,
-        "max_sales": max_sales,
-        "min_sales": min_sales,
-        "number_of_sales": number_of_sales,
-        "has_purchases": has_purchases,
-        "title_header_purchases": title_header_purchases,
-        "total_purchases": total_purchases,
-        "average_purchases": average_purchases,
-        "median_purchases": median_purchases,
-        "max_purchases": max_purchases,
-        "min_purchases": min_purchases,
-        "number_of_purchases": number_of_purchases,
-        "has_sellers": has_sellers,
-        "title_header_seller": title_header_seller,
-        "total_sales_by_seller": total_sales_by_seller,
-        "has_products": has_products,
-        "title_header_products": title_header_products,
-        "total_qty_by_product": total_qty_by_product,
-        "has_profit_margin": has_profit_margin,
-        "title_header_gpm": title_header_gpm,
-        "total_gpm": total_gpm,
-        "sales_array": sales_array,
-        "purchases_array": purchases_array,
-        "sales_by_seller_array": sales_by_seller_array,
-        "sales_by_product_array": sales_by_product_array,
-        "gross_profit_margin_array": gross_profit_margin_array,
-        "sales_array_filtered": sales_array_filtered,
-        "purchases_array_filtered": purchases_array_filtered,
-        "sales_by_seller_array_filtered": sales_by_seller_array_filtered,
-        "sales_by_product_array_filtered": sales_by_product_array_filtered,
-        "gross_profit_margin_array_filtered": gross_profit_margin_array_filtered,
-        "number_of_clients": number_of_clients,
-        "number_of_providers": number_of_providers,
-        "number_of_sellers": number_of_sellers,
-        "has_goods": has_goods,
-        "title_header_goods": title_header_goods,
-        "total_purchases_qty_by_product": total_purchases_qty_by_product,
-        "purchases_by_product_array": purchases_by_product_array,
-        "sales_vs_profits_array": sales_vs_profits_array,
-        "has_sales_vs_profits": has_sales_vs_profits,
-        "has_sales_by_towns": has_sales_by_towns,
-        "title_header_sales_by_towns": title_header_sales_by_towns,
-        "total_sales_by_towns": total_sales_by_towns,
-        "sales_by_towns_array": sales_by_towns_array,
-        "sales_by_towns_array_filtered": sales_by_towns_array_filtered,
-        "has_sales_by_lines": has_sales_by_lines,
-        "title_header_sales_by_lines": title_header_sales_by_lines,
-        "total_sales_by_lines": total_sales_by_lines,
-        "sales_by_lines_array": sales_by_lines_array,
-        "sales_by_lines_array_filtered": sales_by_lines_array_filtered,
-        "has_sales_profits_by_products": has_sales_profits_by_products,
-        "title_header_sales_profits_by_products": title_header_sales_profits_by_products,
-        "total_sales_profits_by_products": total_sales_profits_by_products,
-        "sales_profits_by_products_array": sales_profits_by_products_array,
-        "sales_profits_by_products_array_filtered": sales_profits_by_products_array_filtered,
-        "has_sales_profits_by_clients": has_sales_profits_by_clients,
-        "title_header_sales_profits_by_clients": title_header_sales_profits_by_clients,
-        "total_sales_profits_by_clients": total_sales_profits_by_clients,
-        "sales_profits_by_clients_array": sales_profits_by_clients_array,
-        "sales_profits_by_clients_array_filtered": sales_profits_by_clients_array_filtered,
-        "has_sales_profits_by_towns": has_sales_profits_by_towns,
-        "title_header_sales_profits_by_towns": title_header_sales_profits_by_towns,
-        "total_sales_profits_by_towns": total_sales_profits_by_towns,
-        "sales_profits_by_towns_array": sales_profits_by_towns_array,
-        "sales_profits_by_towns_array_filtered": sales_profits_by_towns_array_filtered,
-        "has_sales_profits_by_sellers": has_sales_profits_by_sellers,
-        "title_header_sales_profits_by_sellers": title_header_sales_profits_by_sellers,
-        "total_sales_profits_by_sellers": total_sales_profits_by_sellers,
-        "sales_profits_by_sellers_array": sales_profits_by_sellers_array,
-        "sales_profits_by_sellers_array_filtered": sales_profits_by_sellers_array_filtered,
+        "total": data[column].sum(),
+        "average": data[column].mean(),
+        "median": data[column].median(),
+        "max": data[column].max(),
+        "min": data[column].min(),
+        "count": data[column].count(),
+        "unique": data["name"].nunique() if "name" in data else 0,
     }
 
 
-def plot_sales_vs_profits(data):
+def filter_data(data: pd.DataFrame, year: int, month: int = None) -> pd.DataFrame:
+    """
+    Filters data by year and optionally by month.
+
+    Args:
+        data (pd.DataFrame): The DataFrame to filter.
+        year (int): The year to filter by.
+        month (int): The month to filter by (optional).
+
+    Returns:
+        pd.DataFrame: The filtered DataFrame.
+    """
+    if month is not None:
+        return data[(data["year_concept"] == year) & (data["month_concept"] == month)]
+    return data[data["year_concept"] == year]
+
+
+def process_data(
+    endpoint: str, db_number: int, year: int, month: int, column: str, title: str
+) -> dict:
+    """
+    Fetches, filters, calculates metrics, and returns data for a specific endpoint.
+
+    Args:
+        endpoint (str): The name of the endpoint.
+        db_number (int): The number of the database.
+        year (int): The year to filter by.
+        month (int): The month to filter by (optional).
+        column (str): The name of the column to calculate metrics for.
+        title (str): The title of the data.
+
+    Returns:
+        dict: A dictionary containing the processed data.
+    """
+    data = fetch_dashboard_data(endpoint, db_number)
+    if data.empty:
+        st.warning(f"No hay datos disponibles para {title}")
+        return {
+            "has_data": False,
+            "title": title,
+            f"{replace_hyphens_with_underscores(endpoint)}_array": pd.DataFrame(),
+            f"{replace_hyphens_with_underscores(endpoint)}_array_filtered": pd.DataFrame(),
+        }
+
+    filtered_data = filter_data(data, year, month)
+    metrics = calculate_metrics(filtered_data, column)
+    metrics.update(
+        {
+            "has_data": True,
+            "title": title,
+            f"{replace_hyphens_with_underscores(endpoint)}_array": data,
+            f"{replace_hyphens_with_underscores(endpoint)}_array_filtered": filtered_data,
+        }
+    )
+    return metrics
+
+
+def get_data(database_number: int, year: int, month: int = None) -> dict:
+    """
+    Fetches and processes dashboard data.
+
+    Args:
+        database_number (int): The number of the database.
+        year (int): The year to filter by.
+        month (int): The month to filter by (optional).
+
+    Returns:
+        dict: A dictionary containing the processed data.
+    """
+    endpoints = {
+        "sales": ("sales", "total_sales", "Ventas"),
+        "purchases": ("purchases", "total_purchases", "Compras"),
+        "sellers": ("sellers", "total_sales", "Ventas por vendedor"),
+        "products": ("products", "total_qty", "Ventas por producto"),
+        replace_hyphens_with_underscores("gross-profit-margin"): (
+            "gross-profit-margin",
+            "total_gpm",
+            "Margen de Ganancia Bruta",
+        ),
+        "goods": ("goods", "total_qty", "Compras por producto"),
+        replace_hyphens_with_underscores("sales-by-towns"): (
+            "sales-by-towns",
+            "total_sales",
+            "Ventas por Municipio",
+        ),
+        replace_hyphens_with_underscores("sales-by-lines"): (
+            "sales-by-lines",
+            "sales",
+            "Ventas por Línea",
+        ),
+        replace_hyphens_with_underscores("sales-by-products"): (
+            "sales-by-products",
+            "sales",
+            "Ventas y Ganancias por Producto",
+        ),
+        replace_hyphens_with_underscores("sales-by-clients"): (
+            "sales-by-clients",
+            "sales",
+            "Ventas y Ganancias por cliente",
+        ),
+        replace_hyphens_with_underscores("sales-and-profits-by-towns"): (
+            "sales-and-profits-by-towns",
+            "sales",
+            "Ventas y Ganancias por Municipio",
+        ),
+        replace_hyphens_with_underscores("sales-and-profits-by-sellers"): (
+            "sales-and-profits-by-sellers",
+            "sales",
+            "Ventas y Ganancias por Vendedor",
+        ),
+    }
+
+    results = {}
+    for key, (endpoint, column, title_prefix) in endpoints.items():
+        title = (
+            f"{title_prefix} del año {year}"
+            if month is None
+            else f"{title_prefix} del mes {month} del año {year}"
+        )
+        results[key] = process_data(
+            endpoint, database_number, year, month, column, title
+        )
+
+    # Combine results into a single dictionary
+    return results
+
+
+def plot_sales_vs_profits(data: pd.DataFrame) -> None:
     """
     Generates a line graph with ticks for monthly sales and profits,
     with 'K' format and currency symbol in the tooltip.
@@ -876,7 +598,9 @@ def plot_sales_vs_profits(data):
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_weekly_stacked_chart(dataframe, filter_current_week=True):
+def create_weekly_stacked_chart(
+    dataframe: pd.DataFrame, filter_current_week: bool = True
+):
     """
     Create a stacked bar chart to show sales and profits by week.
 
@@ -993,7 +717,7 @@ def create_weekly_stacked_chart(dataframe, filter_current_week=True):
 
 
 def generate_donut_chart(
-    dataframe,
+    dataframe: pd.DataFrame,
     name_title: str,
     tooltip_name_title: str,
     column_total_amount: str,
@@ -1070,8 +794,8 @@ def generate_donut_chart(
 
 
 def create_table(
-    dataframe,
-    column_map,
+    dataframe: pd.DataFrame,
+    column_map: dict,
     column_amount_one: str = "sales",
     column_amount_two: str = "profit",
     title_one: str = "Venta",

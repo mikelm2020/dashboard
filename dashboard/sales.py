@@ -44,85 +44,85 @@ with st.container():
 with st.container():
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        if data["has_sales"]:
+        if data["sales"]["has_data"]:
             delta_average_sales = None
             sales_array_filtered_previous = None
 
             delta_sales = utilities.get_delta(
                 month,
                 year,
-                data["sales_array"],
+                data["sales"]["sales_array"],
                 "total_sales",
-                data["average_sales"],
+                data["sales"]["average"],
                 1000,
                 "mean",
             )
             utilities.get_metric(
                 ":material/sell: Ventas Promedio",
-                data["average_sales"],
+                data["sales"]["average"],
                 "K",
                 delta_average_sales,
                 1000,
             )
     with col2:
-        if data["has_sales"]:
+        if data["sales"]["has_data"]:
             delta_median_sales = None
             sales_array_filtered_previous = None
 
             delta_sales = utilities.get_delta(
                 month,
                 year,
-                data["sales_array"],
+                data["sales"]["sales_array"],
                 "total_sales",
-                data["median_sales"],
+                data["sales"]["median"],
                 1000,
                 "median",
             )
             utilities.get_metric(
                 ":material/sell: Mediana Ventas",
-                data["median_sales"],
+                data["sales"]["median"],
                 "K",
                 delta_median_sales,
                 1000,
             )
     with col3:
-        if data["has_sales"]:
+        if data["sales"]["has_data"]:
             delta_max_sales = None
             sales_array_filtered_previous = None
 
             delta_sales = utilities.get_delta(
                 month,
                 year,
-                data["sales_array"],
+                data["sales"]["sales_array"],
                 "total_sales",
-                data["max_sales"],
+                data["sales"]["max"],
                 1000,
                 "max",
             )
             utilities.get_metric(
                 ":material/sell: Maxima Venta",
-                data["max_sales"],
+                data["sales"]["max"],
                 "K",
                 delta_max_sales,
                 1000,
             )
     with col4:
-        if data["has_sales"]:
+        if data["sales"]["has_data"]:
             delta_min_sales = None
             sales_array_filtered_previous = None
 
             delta_sales = utilities.get_delta(
                 month,
                 year,
-                data["sales_array"],
+                data["sales"]["sales_array"],
                 "total_sales",
-                data["min_sales"],
+                data["sales"]["min"],
                 1000,
                 "min",
             )
             utilities.get_metric(
                 ":material/sell: Minima Venta",
-                data["min_sales"],
+                data["sales"]["min"],
                 "K",
                 delta_min_sales,
                 1000,

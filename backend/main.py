@@ -96,10 +96,10 @@ def get_sales(db_number: int = 1):
     SELECT  b.NOMBRE AS name, 
     {month_instruction[0]} AS month_concept, 
     {year_instruction[0]} AS year_concept,  
-    SUM(a.CAN_TOT) AS total_sales 
+    SUM(a.CAN_TOT*a.TIPCAMB) AS total_sales 
     FROM {invoices_table} AS a INNER JOIN {clients_table} AS b 
     ON a.CVE_CLPV = b.CLAVE 
-    WHERE (a.STATUS = 'E') 
+    WHERE (a.STATUS <> 'C') 
     AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
     """
 
@@ -217,10 +217,10 @@ def get_sales_of_seller(db_number: int = 1):
     SELECT  b.NOMBRE AS name, 
     {month_instruction[0]} AS month_concept, 
     {year_instruction[0]} AS year_concept,  
-    SUM(a.CAN_TOT) AS total_sales 
+    SUM(a.CAN_TOT*a.TIPCAMB) AS total_sales 
     FROM {invoices_table} AS a INNER JOIN {sellers_table} AS b 
     ON a.CVE_VEND = b.CVE_VEND 
-    WHERE (a.STATUS = 'E') AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
+    WHERE (a.STATUS <> 'C') AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
     """
 
     final_query = f" GROUP BY b.NOMBRE, {month_instruction[0]}, {year_instruction[0]}"
@@ -337,10 +337,10 @@ def get_gross_profit_margin(db_number: int = 1):
     query = f"""
     SELECT {month_instruction[0]} AS month_concept, 
     {year_instruction[0]} AS year_concept,  
-    SUM(b.CANT * b.PREC) - SUM(b.CANT*b.COST) AS total_gpm 
+    SUM(b.CANT * b.PREC*b.TIP_CAM) - SUM(b.CANT*b.COST) AS total_gpm 
     FROM {invoices_table} AS a INNER JOIN {splits_table} AS b 
     ON a.CVE_DOC = b.CVE_DOC 
-    WHERE (a.STATUS = 'E')
+    WHERE (a.STATUS <> 'C')
     """
 
     final_query = f" GROUP BY {month_instruction[0]}, {year_instruction[0]}"
@@ -454,8 +454,8 @@ def get_sales_vs_profit(db_number: int = 1):
     invoices_table, splits_table = get_table_name(db_number, "FACTF", "PAR_FACTF")
     query = f"""
     SELECT a.FECHA_DOC AS movement_date, 
-    SUM(b.CANT * b.PREC) AS sales,  
-    SUM(b.CANT * b.PREC) - SUM(b.CANT*b.COST) AS profit 
+    SUM(b.CANT * b.PREC*b.TIP_CAM) AS sales,  
+    SUM(b.CANT * b.PREC*b.TIP_CAM) - SUM(b.CANT*b.COST) AS profit 
     FROM {invoices_table} AS a INNER JOIN {splits_table} AS b 
     ON a.CVE_DOC = b.CVE_DOC 
     WHERE (a.STATUS = 'E')
@@ -515,10 +515,10 @@ def get_sales_by_town(db_number: int = 1):
     SELECT  upper(b.MUNICIPIO) AS name,
     {month_instruction[0]} AS month_concept,
     {year_instruction[0]} AS year_concept,
-    SUM(a.CAN_TOT) AS total_sales
+    SUM(a.CAN_TOT*a.TIPCAMB) AS total_sales
     FROM {invoices_table} AS a INNER JOIN {clients_table} AS b
     ON a.CVE_CLPV = b.CLAVE
-    WHERE (a.STATUS = 'E')
+    WHERE (a.STATUS <> 'C')
     AND (b.MUNICIPIO IS NOT NULL AND b.MUNICIPIO <> '')
     """
 
@@ -720,12 +720,13 @@ def get_sales_by_client(db_number: int = 1):
     SELECT b.NOMBRE AS name,
     {month_instruction[0]} AS month_concept, 
     {year_instruction[0]} AS year_concept,
-    SUM((c.CANT*c.PREC)) as sales, 
-    SUM((c.CANT*c.PREC)-(c.CANT*c.COST)) as profit, 
+    SUM((c.CANT*c.PREC*c.TIP_CAM)) as sales, 
+    SUM((c.CANT*c.PREC*c.TIP_CAM)-(c.CANT*c.COST)) as profit, 
     COUNT(b.CLAVE) AS qty
     FROM {invoice_table} a, {clients_table} b, {part_table} c
     WHERE a.CVE_CLPV=b.CLAVE
     AND a.CVE_DOC=c.CVE_DOC
+    AND a.STATUS <> 'C'
     AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
     """
 
@@ -789,13 +790,13 @@ def get_sales_and_profits_by_town(db_number: int = 1):
     SELECT upper(b.MUNICIPIO) AS name,
     {month_instruction[0]} AS month_concept, 
     {year_instruction[0]} AS year_concept,
-    SUM((c.CANT*c.PREC)) as sales, 
-    SUM((c.CANT*c.PREC)-(c.CANT*c.COST)) as profit, 
+    SUM((c.CANT*c.PREC*c.TIP_CAM)) as sales, 
+    SUM((c.CANT*c.PREC*c.TIP_CAM)-(c.CANT*c.COST)) as profit, 
     COUNT(b.CLAVE) AS qty
     FROM {invoice_table} a, {clients_table} b, {part_table} c
     WHERE a.CVE_CLPV=b.CLAVE
     AND a.CVE_DOC=c.CVE_DOC
-    AND a.STATUS = 'E'
+    AND a.STATUS <> 'C'
     AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
     AND (b.MUNICIPIO IS NOT NULL AND b.MUNICIPIO <> '')
     """
@@ -862,13 +863,13 @@ def get_sales_and_profits_by_seller(db_number: int = 1):
     SELECT upper(b.NOMBRE) AS name,
     {month_instruction[0]} AS month_concept, 
     {year_instruction[0]} AS year_concept,
-    SUM((c.CANT*c.PREC)) as sales, 
-    SUM((c.CANT*c.PREC)-(c.CANT*c.COST)) as profit, 
+    SUM((c.CANT*c.PREC*c.TIP_CAM)) as sales, 
+    SUM((c.CANT*c.PREC*c.TIP_CAM)-(c.CANT*c.COST)) as profit, 
     COUNT(b.CVE_VEND) AS qty
     FROM {invoice_table} a, {sellers_table} b, {part_table} c
     WHERE a.CVE_VEND=b.CVE_VEND
     AND a.CVE_DOC=c.CVE_DOC
-    AND a.STATUS = 'E'
+    AND a.STATUS <> 'C'
     AND (b.NOMBRE IS NOT NULL AND b.NOMBRE <> '')
     """
 
